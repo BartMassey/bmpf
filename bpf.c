@@ -1,3 +1,10 @@
+/* Copryight (C) 2007 Bart Massey
+   ALL RIGHTS RESERVED */
+
+/* Bayesian Particle Filtering demo: drive a simulated
+   vehicle with a simulated IMU-ish and GPS-ish device
+   around and try to track it. */
+
 #include <assert.h>
 #include <stdio.h>
 #include <math.h>
