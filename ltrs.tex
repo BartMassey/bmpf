@@ -301,5 +301,13 @@
 
   In the limit as $T\rightarrow\infty$ our discrete
   approximation converges to an integral.  We have
-
+    \begin{eqnarray*}
+      \mu &=& \frac{\int_{u=0}^{\mu_0}{(1-u)^n \textit{du}}}
+                   {\int_{u=0}^{1}{(1-u)^n \textit{du}}} \\
+	  &=& \frac{\left.\frac{-(1-u)^{n+1}}{n+1}\right|_{u=0}^{\mu_0}}
+		   {\left.\frac{-(1-u)^{n+1}}{n+1}\right|_{u=0}^{1}} \\
+          &=& \frac{\frac{-1}{n+1}\left[(1-\mu_0)^{n+1}-1\right]}
+		   {0-\frac{-1}{n+1}} \\
+          &=& 1 - (1 - \mu_0)^{n+1}
+    \end{eqnarray*}
 \end{document}
