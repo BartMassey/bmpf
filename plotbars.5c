@@ -1,0 +1,16 @@
+#!/usr/bin/nickle
+n = 20;
+k = 4;
+
+void plot(lower, upper) {
+  for (int i = lower; i < upper; i++)
+    printf("%f %f\n", (i + 0.5) / n, (1 - i / n)**3);
+  printf("e\n");
+}
+
+printf("set samples %d\n", n);
+printf("set boxwidth %f\n", 1 / n);
+printf("set terminal postscript eps\n");
+printf("plot '-' with boxes fill pattern 1 title 'sum of heights up to variant', '-' with boxes title 'total sum of heights'\n");
+plot(0, k);
+plot(k, n);

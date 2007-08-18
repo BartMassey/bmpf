@@ -1,9 +1,11 @@
 \documentclass[12pt]{article}
 \usepackage{bigpage}
 \usepackage{blockpar}
+\usepackage{graphicx}
 
 \newcommand{\asgn}{\,\,\leftarrow\,\,}
 \newcommand{\newcode}{\\*[0.5\baselineskip]}
+\newcommand{\Prob}{\textrm{Pr}}
 
 \title{Linear Time Weighted Resampling}
 \author{Bart Massey}
@@ -40,7 +42,7 @@
   using the expensive $O(mn)$ algorithm, but only
   sporadically.  A more recent approach is to use a linear
   time algorithm, but one that produces a sample that is
-  only approximately correctly weighted~\ref{?}.
+  only approximately correctly weighted~\cite{?}.
 
   We introduce an algorithm with time complexity $O(m + n)$
   (requiring just the normal $O(m + n)$ space) that produces
@@ -124,7 +126,7 @@
   is still the bottleneck step in a typical BPF
   implementation.
 
-\subsection{An $O(m + n \log m)$ Resampling Algorithm}
+\subsection{A Heap-based $O(m + n \log m)$ Resampling Algorithm}
 
   One simple way to improve the performance of the na\"ive
   algorithm is to improve upon the linear scan performed by
@@ -184,7 +186,7 @@
       \>{\bf return} {\it sample}$(\mu,2i + 1)$
     \end{tabbing}
     \end{minipage}
-    \caption{Faster Sampling}\label{fig-onlm}
+    \caption{Heap-based Sampling}\label{fig-onlm}
   \end{figure}
 
   This algorithm is a bit more complex than the na\"ive one,
@@ -206,7 +208,7 @@
   remains fixed, the cost of heapification can be amortized
   away, yielding an amortized $O(n \log m)$ algorithm.
 
-\subsection{An $O(m + n \log n)$ Resampling Algorithm}
+\subsection{A Merge-based $O(m + n \log n)$ Resampling Algorithm}
 
   One can imagine trying to improve upon the complexity of
   the heap-style algorithm by using some more efficient data
@@ -249,7 +251,7 @@
       \>\>$s'_i \asgn s_j$
     \end{tabbing}
     \end{minipage}
-    \caption{Sampling By Merging}\label{fig-merge}
+    \caption{Merge-based Resampling}\label{fig-merge}
   \end{figure}
 
   Complexity-wise, we seem to have simply moved the $\log$
@@ -261,5 +263,43 @@
   generate the variates in sorted order (at amortized
   constant cost) we could make this approach run in time
   $O(m + n)$.  The next section shows how to achieve this.
+
+\subsection{An Optimal $O(m + n)$ Resampling Algorithm}
+
+  As discussed in the previous section, if we can generate
+  the variates comprising a uniform sample of $n$ values in
+  increasing order, we can resample in time $O(m + n)$.  In
+  this section, we show the simple math that achieves this
+  goal.
+
+  Assume without loss of generality that our goal is simply
+  to generate the first variate in a uniform sample of $n +
+  1$ values.  Call the first variate $\mu_0$, the set of
+  remaining variates $U$ and note that $|U|=n$.  Now, for
+  any given variate $\mu_i \in X$, we have that
+    $$ \Prob(\mu_0 < \mu_i) = 1 - \mu_0 $$
+  Since this is independently true for each $\mu_i$, we define
+    $$p(\mu_0) = \Prob(\forall \mu_i \in U ~.~ \mu_0 < \mu_i) = (1 - \mu_0)^n$$
+  
+  To see how to take a weighted random sample from this
+  distribution, first consider a discrete approximation that
+  divides the range $0..1$ into $T$ intervals.  Given a
+  random variate $\mu$, we will use $\mu_0=i_0/T$ when
+  the sum of the weights of the intervals up to interval $i_0$
+  is just greater than $\mu$.  Of course, the weights must be
+  normalized by dividing by the total weight.  Thus we have
+    $$i_0=\min_{i\in1..T}\left[{\frac{\sum_{j=1}^{i}{p(j/T)}}
+                         {\sum_{j=1}^{T}{p(j/T)}} \ge \mu}\right]$$
+  Figure~\ref{fig-calculus} illustrates the calculation
+  here.
+
+  \begin{figure}
+    \centering
+    \includegraphics{bars.eps}
+    \caption{Discrete Sampling Approximation}\label{fig-calculus}
+  \end{figure}
+
+  In the limit as $T\rightarrow\infty$ our discrete
+  approximation converges to an integral.  We have
 
 \end{document}
