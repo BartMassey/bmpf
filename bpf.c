@@ -54,9 +54,9 @@ static void update_state(state *p, double dt) {
 
 static state vehicle = { {0, 0}, {10, 0} };
 
-static state particle_states[2][nparticles];
-static int which_particle = 0;
-static state *particle = particle_states[0];
+static state particle_buffer[2][nparticles];
+static state *particle = particle_buffer[0];
+static int which_particle_buffer = 0;
 
 void init_particles(void) {
     int i;
@@ -101,14 +101,6 @@ double imu_prob(state *particle, acoord *imu) {
     return pr * pt;
 }
 
-double sum(double a[]) {
-    int i;
-    double t = a[0];
-    for (i = 1; i < nparticles; i++)
-	t += a[i];
-    return t;
-}
-
 int argmax(double a[]) {
     int i = 0, j;
     for (j = 1; j < nparticles; j++)
@@ -117,9 +109,50 @@ int argmax(double a[]) {
     return i;
 }
 
-double weight[nparticles];
+typedef struct {
+    double weight, left_weight, right_weight;
+    int particle;
+} heapent;
+static heapent heap[nparticles];
 
-state weighted_sample(void) {
+void heapify(void) {
+    for (i = nparticles - 1; i >= 0; i++) {
+	int this = i;
+	while (1) {
+	    int left = 2 * this + 1;
+	    int right = 2 * this + 2;
+	    double hlw, hrw;
+	    int lbig, rbig, next;
+	    if (left >= nparticles) {
+		heap[this].left_weight = 0;
+		heap[this].right_weight = 0;
+		break;
+	    }
+	    hlw = heap[left].weight;
+	    if (right >= nparticles) {
+		if (hlw > heap[this].weight)
+		    heap_exchange(left, i);
+		heap[left].left_weight = 0;
+		heap[this].left_weight = hlw;
+		break;
+	    }
+	    hrw = heap[right].weight;
+	    lbig = hlw > heap[this].weight;
+	    rbig = hrw > heap[this].weight;
+	    next = left;
+	    if (!lbig && !rbig) {
+		heap_weights(this);
+		break;
+	    }
+	    if (rbig && (!lbig || hrw > hlw))
+		next = right;
+	    heap_exchange(next, this);
+	    this = next;
+	}
+    }
+}
+
+state weighted_sample(double tweight) {
     int i;
     double w = uniform();
     double t = 0;
@@ -135,6 +168,7 @@ state weighted_sample(void) {
 state bpf_step(ccoord *gps, acoord *imu, double dt) {
     int i;
     state *newp;
+    double tweight;
     /* update particles */
     for (i = 0; i < nparticles; i++)
 	update_state(&particle[i], dt);
@@ -142,22 +176,26 @@ state bpf_step(ccoord *gps, acoord *imu, double dt) {
     for (i = 0; i < nparticles; i++) {
 	double gp = gps_prob(&particle[i], gps);
 	double ip = imu_prob(&particle[i], imu);
-        weight[i] = gp * ip;
+	heap[i].particle = i;
+        heap[i].weight = gp * ip;
     }
-    /* normalize */
-    double tweight = sum(weight);
+    /* heapify */
+    heapify();
+    /* get normalization */
+    tweight = heap[0].weight +
+	      heap[0].left_weight +
+	      heap[0].right_weight;
     assert(tweight > 1e-10);
-    for (i = 0; i < nparticles; i++)
-	weight[i] /= tweight;
     /* resample */
-    newp = particle_states[!which_particle];
+    /* XXX shouldn't need to copy these, just pointers.  uggh. */
+    newp = particle_buffers[!which_particle_buffer];
     for (i = 0; i < nparticles; i++)
-        newp[i] = weighted_sample();
+        newp[i] = weighted_sample(tweight);
     /* find max weighted */
     state best = particle[argmax(weight)];
     /* complete */
     particle = newp;
-    which_particle = !which_particle;
+    which_particle_buffer = !which_particle_buffer;
     return best;
 }
 
