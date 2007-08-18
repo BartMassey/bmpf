@@ -27,7 +27,7 @@
 
 \section{Introduction}
 
-  Bayesian Particle Filtering (BPF) is an exciting new methodology
+  Bayesian Particle Filtering (BPF)~\cite{?} is an exciting new methodology
   for state space tracking and sensor fusion.  The bottleneck
   step in BPF is weighted resampling: creating a new
   population of ``particles'' from an old population by
@@ -58,27 +58,41 @@
   sizes that in turn dramatically improve BPF performance.
 
   A good starting point for describing our algorithm is to
-  review the standard resampling algorithms.  We then
-  describe our algorithm and report its effectiveness in a
-  BPF implementation.
+  review some resampling algorithms.  We describe our
+  algorithm and report its effectiveness in a BPF
+  implementation.
 
-\subsection{An $O(mn)$ Resampling Algorithm}
+\section{Weighted Resampling Algorithms}
+
+  There are a number of approaches to the weighted
+  resampling problem.  In this section, we describe some
+  weighted resampling algorithms in order of increasing time
+  efficiency.  We conclude with the description of our
+  $O(m + n)$ algorithm.
+
+  For what follows, assume an array $s$ of $m$ input
+  samples, and an output array $s'$ that will hold the $n$
+  output samples of the resampling.  Assume further that
+  associated with each sample $s_i$ is a weight $w(s_i)$,
+  and that the weights have been normalized to sum to 1.
+  This can of course be done in time $O(m)$, but typical
+  efficient implementations keep a running weight total
+  during weight generation, and then normalize their
+  sampling range rather than normalizing the weights
+  themselves.  We thus discount the normalization cost in
+  our analysis.
+
+\subsection{A Na\"ive $O(mn)$ Resampling Algorithm}
 
   The na\"ive approach to resampling has been re-invented
-  many times.  Assume an array $s$ of $m$ input samples, and an
-  output array $s'$ that will hold the $n$ output samples of
-  the resampling.  Assume
-  further that associated with each sample $s_i$ is a
-  weight $w(s_i)$, and that the weights have been normalized
-  to sum to 1 (which can of course be done in linear time).
-  In this setting a correct, if inefficient, way to resample is via the
-  pseudocode of Figure~\ref{fig-omn}.  The {\em sample}
-  procedure selects the first sample such that the sum of
-  weights in the input up to and including this sample is
-  greater than some index value $\mu$.  The index value is chosen
-  in {\em resample} by uniform random sampling from the distribution
-  $[0..1]$, with each output position being filled in
-  turn.
+  many times.  A correct, if inefficient, way to resample is
+  via the pseudocode of Figure~\ref{fig-omn}.  The {\em
+  sample} procedure selects the first sample such that the
+  sum of weights in the input up to and including this
+  sample is greater than some index value $\mu$.  The index
+  value is chosen in {\em resample} by uniform random
+  sampling from the distribution $[0..1]$, with each output
+  position being filled in turn.
 
   \begin{figure}
     \centering
@@ -86,14 +100,14 @@
       \begin{tabbing}
       XX\=XXXX\=XXXX\=XXXX\=\kill
       {\bf to} {\it sample}$(\mu)$: \\
-      \>$t \asgn 0$\\
-      \>{\bf for} $i$ {\bf from} $1$ {\bf to} $m$\\
-      \>\>$t \asgn t + w(s_i)$\\
-      \>\>{\bf if} $t > \mu$ {\bf then}\\
-      \>\>\>{\bf return} $s_i$\newcode
+      \>$t \asgn 0$ \\
+      \>{\bf for} $i$ {\bf from} $1$ {\bf to} $m$ {\bf do} \\
+      \>\>$t \asgn t + w(s_i)$ \\
+      \>\>{\bf if} $t > \mu$ {\bf then} \\
+      \>\>\>{\bf return} $s_i$ \newcode
       {\bf to} {\it resample}: \\
-      \>{\bf for} $i$ {\bf from} $1$ {\bf to} $n$\\
-      \>\>$\mu \asgn \textit{random-real}([0..1])$\\
+      \>{\bf for} $i$ {\bf from} $1$ {\bf to} $n$ {\bf do} \\
+      \>\>$\mu \asgn \textit{random-real}([0..1])$ \\
       \>\>$s'_i \asgn sample(\mu)$
       \end{tabbing}
     \end{minipage}
@@ -130,17 +144,17 @@
       \begin{tabbing}
       XX\=XXXX\=XXXX\=XXXX\=\kill
       {\bf to} {\it init-weights}: \\
-      \>{\bf for} $i$ {\bf from} $m$ {\bf downto} $1$\\
-      \>\>{\bf if} $2i > m$ {\bf then}\\
-      \>\>\>$w_t(s_i) \asgn w(s_i)$\\
-      \>\>{\bf else if} $2i + 1 > m$ {\bf then}\\
-      \>\>\>$w_t(s_i) \asgn w_t(s_{2i}) + w(s_i)$\\
+      \>{\bf for} $i$ {\bf from} $m$ {\bf downto} $1$ {\bf do} \\
+      \>\>{\bf if} $2i > m$ {\bf then} \\
+      \>\>\>$w_t(s_i) \asgn w(s_i)$ \\
+      \>\>{\bf else if} $2i + 1 > m$ {\bf then} \\
+      \>\>\>$w_t(s_i) \asgn w_t(s_{2i}) + w(s_i)$ \\
       \>\>{\bf else}\\
-      \>\>\>$w_t(s_i) \asgn w_t(s_{2i}) + w(s_i) + w_t(s_{2i+1})$\\
-      \>{\bf for} $i$ {\bf from} $1$ {\bf to} $m$\\
-      \>\>{\bf if} $2i > m$ {\bf then}\\
-      \>\>\>$w_l(s_i) \asgn 0$\\
-      \>\>{\bf else}\\
+      \>\>\>$w_t(s_i) \asgn w_t(s_{2i}) + w(s_i) + w_t(s_{2i+1})$ \\
+      \>{\bf for} $i$ {\bf from} $1$ {\bf to} $m$ {\bf do} \\
+      \>\>{\bf if} $2i > m$ {\bf then} \\
+      \>\>\>$w_l(s_i) \asgn 0$ \\
+      \>\>{\bf else} \\
       \>\>\>$w_l(s_i) \asgn w_t(s_{2i})$
     \end{tabbing}
     \end{minipage}
@@ -164,9 +178,9 @@
       XX\=XXXX\=XXXX\=XXXX\=\kill
       {\bf to} {\it sample}$(\mu,i)$: \\
       \>{\bf if} $\mu \le w_l(s_i)$ {\bf then} \\
-      \>\>{\bf return} {\it sample}$(\mu,2i)$\\
+      \>\>{\bf return} {\it sample}$(\mu,2i)$ \\
       \>{\bf if} $\mu \le w_l(s_i) + w(s_i)$ {\bf then} \\
-      \>\>{\bf return} $s_i$\\
+      \>\>{\bf return} $s_i$ \\
       \>{\bf return} {\it sample}$(\mu,2i + 1)$
     \end{tabbing}
     \end{minipage}
@@ -182,7 +196,17 @@
   place, so there is no computational complexity penalty for
   this optimization.
 
-\subsection{An $O(n log n + m)$ Resampling Algorithm}
+  For the normal case of resampling, we would like to get
+  rid of the $\log m$ penalty per output sample.  However,
+  there is a rarely-occuring special case in which this
+  algorithm is quite efficient.  Consider an offline
+  sampling problem in which we plan to repeatedly draw a
+  small number of samples from the same extremely large
+  input distribution.  Because the input distribution
+  remains fixed, the cost of heapification can be amortized
+  away, yielding an amortized $O(n \log m)$ algorithm.
+
+\subsection{An $O(m + n \log n)$ Resampling Algorithm}
 
   One can imagine trying to improve upon the complexity of
   the heap-style algorithm by using some more efficient data
@@ -198,30 +222,44 @@
   fact that each scan is independent.  It seems a shame not
   to reuse the work of the initial scan in subsequent scans.
 
-  Imagine, for a moment, that an array $u$ of $n$ variates
-  was generated up-front, then sorted.  At this point, a
-  {\em merge} operation, as shown in Figure~\ref{fig-merge},
-  could be used to generate all $n$ outputs in a single pass
-  over the $m$ inputs.
-
+  Let us generate an array $u$ of $n$ variates up-front,
+  then sort it.  At this point, a {\em merge} operation, as
+  shown in Figure~\ref{fig-merge}, can be used to generate
+  all $n$ outputs in a single pass over the $m$ inputs.  The
+  merge operation is simple.  Walk the input array once.
+  Each time the sum of weights hits the current variate
+  $u_i$, output a sample and move to the next variate
+  $u_{i+1}$.  The time complexity of the initial sort is
+  $O(n \log n)$ and of the merge pass is $O(m + n)$, for a
+  total time complexity of $O(m + n \log n)$.
 
   \begin{figure}
     \centering
     \begin{minipage}{0.6\textwidth}
       \begin{tabbing}
       XX\=XXXX\=XXXX\=XXXX\=\kill
-      {\bf to} {\it merge}$({\bf u})$: \\
+      {\bf to} {\it merge}$(u)$: \\
       \>$j \asgn 1$ \\
-      \>$t \asgn 0$ \\
-      \>$\mu \asgn u_1$ \\
-      \>{\bf for} $i$ {\bf from} $1$ {\bf to} $n$\\
-      \>\>{\bf while} $\mu < t$ {\bf do}\\
-      \>\>\>$t \asgn t + w(s_j)$\\
-      \>\>\>$j \asgn j + 1$\\
-      \>\>$s'_i \asgn s_j
+      \>$t \asgn u_1$ \\
+      \>{\bf for} $i$ {\bf from} $1$ {\bf to} $n$ {\bf do} \\
+      \>\>$\mu \asgn u_i$ \\
+      \>\>{\bf while} $\mu < t$ {\bf do} \\
+      \>\>\>$t \asgn t + w(s_j)$ \\
+      \>\>\>$j \asgn j + 1$ \\
+      \>\>$s'_i \asgn s_j$
     \end{tabbing}
     \end{minipage}
-    \caption{Faster Sampling}\label{fig-merge}
+    \caption{Sampling By Merging}\label{fig-merge}
   \end{figure}
+
+  Complexity-wise, we seem to have simply moved the $\log$
+  factor of the previous algorithm from $m$ to $n$,
+  replacing our $O(m + n \log m)$ algorithm with an $O(m + n
+  \log n)$ one.  However, our new algorithm has an important
+  distinction.  The log factor this time comes merely from
+  sorting an array of uniform variates.  If we could somehow
+  generate the variates in sorted order (at amortized
+  constant cost) we could make this approach run in time
+  $O(m + n)$.  The next section shows how to achieve this.
 
 \end{document}
