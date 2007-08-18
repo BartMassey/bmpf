@@ -2,6 +2,9 @@
 \usepackage{bigpage}
 \usepackage{blockpar}
 \usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amscd}
 
 \newcommand{\asgn}{\,\,\leftarrow\,\,}
 \newcommand{\newcode}{\\*[0.5\baselineskip]}
@@ -18,7 +21,9 @@
   We describe an optimal algorithm for perfect weighted resampling
   of a population, with time complexity $O(m + n)$ for
   resampling $m$ inputs to produce $n$ outputs.  This
-  is an advance over the perfect $O(m + n \log m)$ algorithm and
+  is a substantial performance improvement over
+  typically-used resampling algorithms, and a quality
+  improvement over the
   approximate linear-time algorithm that represent the
   state of the art.  Our resampling algorithm is also easily
   parallelizable, with linear speedup.
@@ -84,7 +89,7 @@
   themselves.  We thus discount the normalization cost in
   our analysis.
 
-\subsection{A Na\"ive $O(mn)$ Resampling Algorithm}
+\subsection{A Na\"ive $O(mn)$ Resampling Algorithm}\label{sec-naive}
 
   The na\"ive approach to resampling has been re-invented
   many times.  A correct, if inefficient, way to resample is
@@ -126,7 +131,7 @@
   is still the bottleneck step in a typical BPF
   implementation.
 
-\subsection{A Heap-based $O(m + n \log m)$ Resampling Algorithm}
+\subsection{A Heap-based $O(m + n \log m)$ Resampling Algorithm}\label{sec-heap}
 
   One simple way to improve the performance of the na\"ive
   algorithm is to improve upon the linear scan performed by
@@ -208,7 +213,7 @@
   remains fixed, the cost of heapification can be amortized
   away, yielding an amortized $O(n \log m)$ algorithm.
 
-\subsection{A Merge-based $O(m + n \log n)$ Resampling Algorithm}
+\subsection{A Merge-based $O(m + n \log n)$ Resampling Algorithm}\label{sec-merge}
 
   One can imagine trying to improve upon the complexity of
   the heap-style algorithm by using some more efficient data
@@ -264,7 +269,7 @@
   constant cost) we could make this approach run in time
   $O(m + n)$.  The next section shows how to achieve this.
 
-\subsection{An Optimal $O(m + n)$ Resampling Algorithm}
+\subsection{An Optimal $O(m + n)$ Resampling Algorithm}\label{sec-optimal}
 
   As discussed in the previous section, if we can generate
   the variates comprising a uniform sample of $n$ values in
@@ -310,4 +315,90 @@
 		   {0-\frac{-1}{n+1}} \\
           &=& 1 - (1 - \mu_0)^{n+1}
     \end{eqnarray*}
+  However, what we need is $\mu_0$ in terms of
+  $\mu$, so we solve
+    \begin{eqnarray*}
+       \mu &=& 1 - (1 - \mu_0)^{n+1} \\
+       (1 - \mu_0)^{n+1} &=& 1 - \mu \\
+       \mu_0 &=& 1 - (1 - \mu)^\frac{1}{n+1} \\
+       \mu_0 &=& 1 - \mu^\frac{1}{n+1}
+    \end{eqnarray*}
+  (The last step is permissible because $\mu$ is a
+  uniform deviate in the range $0..1$, and therefore
+  statistically equivalent to $(1-\mu)$.)
+
+  We now have the formula we need for selecting the first
+  deviate from a set of $n$ in increasing order.  To select
+  the next deviate, we simply decrease $n$ by $1$, select a
+  deviate from the whole range, and then scale and offset it
+  to the remaining range.  We repeat this process until
+  $n=0$.  (Recall that $|U|=n$, so the last deviate will be
+  selected when $n=0$.)  Figure~\ref{fig-deviate} shows
+  this process.
+  
+  \begin{figure}
+    \centering
+    \begin{minipage}{0.6\textwidth}
+      \begin{tabbing}
+      XX\=XXXX\=XXXX\=XXXX\=\kill
+      {\bf to} {\it randomize}: \\
+      \>$u_1 \asgn (1-\mu)^{\frac{1}{n}}$ \\
+      \>{\bf for} $i$ {\bf from} $2$ {\bf to} $n$ {\bf do} \\
+      \>\>$u_i \asgn u_{i-1} + (1-u_{i-1})(1-\mu)^{\frac{1}{n-i+1}}$
+    \end{tabbing}
+    \end{minipage}
+    \caption{Generating Deviates In Increasing Order}\label{fig-deviate}
+  \end{figure}
+
+  We now have the array $u$ of deviates in sorted order that
+  we need to feed the {\em merge} algorithm of the previous
+  section.  We thus have an $O(m + n)$ algorithm for random
+  weighted selection.
+
+\section{Discussion}
+
+  Our optimal algorithm will parallelize reasonably well
+  with some additional work. We need to derive the general
+  direct expression for placing sample $k$ of $n$ for
+  arbitrary $k$.
+  \begin{enumerate}
+  \item A master processor uses the general expression
+    we have derived to break up the array of variants
+    to be calculated by our $P$-processor
+    machine into $P$ regions.
+  \item Each processor indepedently fills in its section
+    of variates in the manner described in Section~\ref{sec-optimal}.
+  \item Each processor fills in a section of total accumulated
+    weights in the input array as described in
+    Section~\ref{sec-merge}.
+  \item In a separate pass, each processor adds the sum of
+    weights to its left to its section of the total accumulated
+    weights in the input array.
+  \item Each processor does a search for the start and end
+    of its section of the heap.  This can be done in time
+    $O(\log m)$ using binary search
+  \item Finally, each processor samples its section of heap
+    using the {\em merge} algorithm of Section~\ref{sec-merge}.
+  \end{enumerate}
+  
+  An interesting open question is whether at reasonable
+  sample sizes there is any significant difference between
+  accurate weighted random sampling, and the simpler
+  strategy of shuffling the input samples and then selecting
+  uniformly from the weighted inputs using the {\em merge}
+  approach of Section~\ref{sec-merge}.  The latter approach
+  has the advantage that one avoids computing $n$ rational
+  exponentiations during variate generation, which may
+  significantly improve the constant factor at the expense
+  of accuracy.  The Central Limit Theorem strongly suggests
+  that the two approaches are largely equivalent.
+
+\section*{Acknowledgments}
+
+  Thanks much to Jules Kongslie, Mark Jones, Dave Archer,
+  Jamey Sharp and Bryant York for conversations that led up
+  to this work.  Thanks also to Jules Kongslie and to James
+  McNames and his students for teaching me BPF.  It is my
+  $n^{\textrm{th}}$ approach, but this time it worked.
+
 \end{document}
