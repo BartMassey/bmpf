@@ -1,0 +1,31 @@
+import Math;
+import ParseArgs;
+autoimport PRNG;
+
+argdesc argd = {
+    args = {{
+	var = {arg_int = &(int count = 10)},
+	abbr = 'n',
+	name = "count",
+	expr_name = "samples",
+	desc = "Number of samples to generate."
+    }}
+};
+
+parseargs(&argd, &argv);
+
+dev_srandom(32);
+
+real uniform() {
+    return imprecise(randbits(256) / 2**256, 256);
+}
+
+real superuniform(int n) {
+    return 1 - uniform()**(1/(n + 1));
+}
+
+real x0 = 0;
+for (int i = count - 1; i >= 0; --i) {
+    x0 = x0 + superuniform(i) * (1 - x0);
+    printf("%g\n", x0);
+}
