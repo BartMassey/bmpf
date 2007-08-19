@@ -381,6 +381,21 @@
     \caption{Vehicle Tracking---BPF With Optimal Resampling}\label{fig-track-optimal}
   \end{figure}
 
+  The important distinction between these algorithms is not
+  quality, but rather runtime.  Figure~\ref{fig-times} shows
+  the time in seconds for the na\"ive and optimal algorithms
+  as a function of the particle size.  The machine is an
+  Intel Core II Duo box at 2.13 GHz with 2GB of memory.  As
+  expected, BPF using the na\"ive algorithm becomes unusable
+  at larger particle sizes, whereas BPF using the optimal
+  algorithm scales linearly.
+
+  \begin{figure}
+    \centering
+    \includegraphics{times.eps}
+    \caption{Runtimes for BPF Implementation}\label{fig-times}
+  \end{figure}
+
 \section{Discussion}
 
   Our optimal algorithm will parallelize reasonably well
