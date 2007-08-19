@@ -22,7 +22,7 @@ static resample resample_naive, resample_optimal;
 static const double nsecs = 100;
 static const double dt = 0.1;
 int nparticles = 100;
-static resample *resampler = resample_optimal;
+static resample *resampler = resample_naive;
 
 static double avar = M_PI / 16;
 static double pvar = 0.1;
@@ -183,7 +183,7 @@ state bpf_step(ccoord *gps, acoord *imu, double dt) {
     /* get normalizing constant */
     double tweight = sum(weight);
     /* resample */
-    newp = resample_optimal(tweight);
+    newp = resampler(tweight);
     /* find max weighted */
     state best = particle[argmax(weight)];
     /* complete */
