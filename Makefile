@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -g -O2 -Wall
+CFLAGS = -g -Wall -O4
 
 all: ltrs.dvi bpf
 
@@ -12,3 +12,6 @@ bars.eps: plotbars.5c
 
 bpf: bpf.c
 	$(CC) $(CFLAGS) -o bpf bpf.c -lm
+
+clean:
+	-rm -f bars.eps ltrs.dvi bpf

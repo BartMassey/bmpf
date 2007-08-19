@@ -141,21 +141,20 @@ state *resample_naive(double scale) {
 }
 
 double nform(int n) {
-    return pow(1.0 - uniform(), 1.0 / (n + 1));
+    return 1.0 - pow(uniform(), 1.0 / (n + 1));
 }
 
-state *resample_fast(double scale) {
+state *resample_optimal(double scale) {
     state *newp = particle_states[!which_particle];
-    double u0 = nform(nparticles - 1);
+    double u0 = nform(nparticles - 1) * scale;
     int i, j = 0;
     double t = weight[0];
     for (i = 0; i < nparticles; i++) {
-	double rescale;
-        while (t <= u0 * scale)
-	    t += weight[++j];
+        while (t < u0 && ++j < nparticles)
+	    t += weight[j];
+	assert(j < nparticles);
 	newp[i] = particle[j];
-	rescale = t / scale;
-	u0 = rescale + (1 - rescale) * nform(nparticles - i - 1);
+	u0 = t + (scale - t) * nform(nparticles - i - 1);
     }
     return newp;
 }
@@ -172,11 +171,10 @@ state bpf_step(ccoord *gps, acoord *imu, double dt) {
 	double ip = imu_prob(&particle[i], imu);
         weight[i] = gp * ip;
     }
-    /* normalize */
+    /* get normalizing constant */
     double tweight = sum(weight);
-    assert(tweight > 1e-10);
     /* resample */
-    newp = resample_naive(tweight);
+    newp = resample_optimal(tweight);
     /* find max weighted */
     state best = particle[argmax(weight)];
     /* complete */
