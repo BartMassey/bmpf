@@ -123,13 +123,14 @@
 
   The na\"ive algorithm has its advantages.  It is easy to
   verify that it is a perfect sampling algorithm.  It is
-  easy to implement, and easy to parallelize.  While
-  expected running time is $o(\frac{1}{2}mn)$, the
-  proportionality constant can be improved substantially by
-  paying $O(m \log m)$ time up front to sort the input array
-  so that the largest weights occur first.  That said, this
-  is still the bottleneck step in a typical BPF
-  implementation.
+  easy to implement, and easy to parallelize.  The expected
+  running time is $o(\frac{1}{2}mn)$.  If the distribution
+  of weights is uneven enough, the proportionality constant
+  might be improved by paying $O(m \log m)$ time up front to
+  sort the input array so that the largest weights occur
+  first (but this does not seem to work well in practice).
+  Irregardless, resampling is still the bottleneck step in a
+  typical BPF implementation.
 
 \subsection{A Heap-based $O(m + n \log m)$ Resampling Algorithm}\label{sec-heap}
 
@@ -196,12 +197,13 @@
 
   This algorithm is a bit more complex than the na\"ive one,
   but it dramatically improves upon the worst-case running
-  time.  As with the na\"ive algorithm, good constant-factor
-  improvements are possible by actually heapifying the input
+  time.  As with the na\"ive algorithm, constant-factor
+  improvements might be possible by actually heapifying the input
   such that the largest-weighted inputs are near the top.
   Heapification is also $O(m)$ time and can be done in
   place, so there is no computational complexity penalty for
-  this optimization.
+  this optimization.  However, it is an extra step, and the
+  constant factors may not be worth it.
 
   For the normal case of resampling, we would like to get
   rid of the $\log m$ penalty per output sample.  However,
@@ -354,6 +356,30 @@
   we need to feed the {\em merge} algorithm of the previous
   section.  We thus have an $O(m + n)$ algorithm for random
   weighted selection.
+
+\section{Performance}
+
+  We implemented the na\"ive and optimal algorithms in a BPS
+  tracker for simulated vehicle navigation.  The
+  simulated vehicle has a GPS-like and an IMU-like device
+  for navigational purposes; both the device and the vehicle
+  model are noisy.  Figures~\ref{fig-track-naive} and
+  \ref{fig-track-optimal} show actual and estimated vehicle
+  tracks from the simulator for the 100-particle case.  Note
+  that the quality of tracking of the two algorithms is
+  indistinguishable, as expected.
+
+  \begin{figure}
+    \centering
+    \includegraphics{track-naive-100.eps}
+    \caption{Vehicle Tracking---BPF With Na\"ive Resampling}\label{fig-track-naive}
+  \end{figure}
+
+  \begin{figure}
+    \centering
+    \includegraphics{track-optimal-100.eps}
+    \caption{Vehicle Tracking---BPF With Optimal Resampling}\label{fig-track-optimal}
+  \end{figure}
 
 \section{Discussion}
 
