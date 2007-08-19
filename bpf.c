@@ -10,17 +10,22 @@
 #include <math.h>
 #include <stdlib.h>
 #include <limits.h>
-
-static const double nsecs = 100;
-static const double dt = 0.1;
-#define nparticles 1000
-
-static double avar = M_PI / 16;
-static double pvar = 0.1;
+#include <string.h>
 
 typedef struct { double x, y; } ccoord;
 typedef struct { double r, t; } acoord;
 typedef struct { ccoord posn; acoord vel; } state;
+typedef state *resample(double);
+
+static resample resample_naive, resample_optimal;
+
+static const double nsecs = 100;
+static const double dt = 0.1;
+int nparticles = 100;
+static resample *resampler = resample_optimal;
+
+static double avar = M_PI / 16;
+static double pvar = 0.1;
 
 static double uniform(void) {
     return random() / (double) INT_MAX;
@@ -54,12 +59,18 @@ static void update_state(state *p, double dt) {
 
 static state vehicle = { {0, 0}, {10, 0} };
 
-static state particle_states[2][nparticles];
-static int which_particle = 0;
-static state *particle = particle_states[0];
+static state *particle_states[2];
+static int which_particle;
+static state *particle;
+static double *weight;
 
 void init_particles(void) {
     int i;
+    for (i = 0; i < 2; i++)
+	particle_states[i] = malloc(nparticles * sizeof(*particle_states[0]));
+    weight = malloc(nparticles * sizeof(*weight));
+    which_particle = 0;
+    particle = particle_states[0];
     for (i = 0; i < nparticles; i++) {
 	particle[i].posn.x = abs(gaussian(1));
 	particle[i].posn.y = abs(gaussian(1));
@@ -117,8 +128,6 @@ int argmax(double a[]) {
     return i;
 }
 
-double weight[nparticles];
-
 state weighted_sample(double scale) {
     int i;
     double w = uniform() * scale;
@@ -148,13 +157,13 @@ state *resample_optimal(double scale) {
     state *newp = particle_states[!which_particle];
     double u0 = nform(nparticles - 1) * scale;
     int i, j = 0;
-    double t = weight[0];
+    double t = 0;
     for (i = 0; i < nparticles; i++) {
-        while (t < u0 && ++j < nparticles)
-	    t += weight[j];
+        while (t + weight[j] < u0 && j < nparticles)
+	    t += weight[j++];
 	assert(j < nparticles);
 	newp[i] = particle[j];
-	u0 = t + (scale - t) * nform(nparticles - i - 1);
+	u0 = u0 + (scale - u0) * nform(nparticles - i - 1);
     }
     return newp;
 }
@@ -183,7 +192,7 @@ state bpf_step(ccoord *gps, acoord *imu, double dt) {
     return best;
 }
 
-int main() {
+void run(void) {
     double t;
     init_particles();
     for(t = 0; t <= nsecs; t += dt) {
@@ -194,5 +203,20 @@ int main() {
 	state est = bpf_step(&gps, &imu, dt);
 	printf("%g %g\n", est.posn.x, est.posn.y);
     }
+}
+
+
+int main(int argc, char **argv) {
+    if (argc > 1)
+	nparticles = atoi(argv[1]);
+    if (argc > 2) {
+	if (!strcmp(argv[2], "naive"))
+	    resampler = resample_naive;
+	else if (!strcmp(argv[2], "optimal"))
+	    resampler = resample_optimal;
+	else
+	    abort();
+    }
+    run();
     return 0;
 }
