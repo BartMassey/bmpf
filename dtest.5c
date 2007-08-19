@@ -2,14 +2,60 @@ import Math;
 import ParseArgs;
 autoimport PRNG;
 
+/* mergesort */
+public void function sort (&real[*] a)
+{
+    void function msort (int p, int r)
+    {
+	if (p < r)
+	{
+	    /* merge two sorted lists together */
+	    void function merge (int p, int q, int r)
+	    {
+		/* temporary storage for left half of array */
+		int n1 = q - p + 1;
+		poly[n1] L;
+		for (int i = 0; i < n1; i++)
+		    L[i] = a[p+i];
+
+		/* temporary storage for right half of array */
+		int n2 = r - q;
+		poly[n2] R;
+		for (int i = 0; i < n2; i++)
+		    R[i] = a[q+i+1];
+
+		/* merge two halves back into main array */
+		int i = 0, j = 0, k = p;
+		while (i < n1 && j < n2)
+		    a[k++] = L[i] > R[j] ? R[j++] : L[i++];
+		while (i < n1)
+		    a[k++] = L[i++];
+		while (j < n2)
+		    a[k++] = R[j++];
+	    }
+
+	    int q = (p + r) // 2;
+	    msort (p, q);
+	    msort (q+1, r);
+	    merge (p, q, r);
+	}
+    }
+    msort (0, dim(a)-1);
+}
+
 argdesc argd = {
-    args = {{
-	var = {arg_int = &(int count = 10)},
-	abbr = 'n',
-	name = "count",
-	expr_name = "samples",
-	desc = "Number of samples to generate."
-    }}
+    args = {
+	{ var = {arg_int = &(int count = 10)},
+	  abbr = 'n',
+	  name = "count",
+	  expr_name = "samples",
+	  desc = "Number of samples to generate." },
+	{ var = {arg_int = &(int trials = 1)},
+	  abbr = 't',
+	  name = "trials",
+	  expr_name = "num",
+	  desc = "Number of trials of experiment" }
+    }
 };
 
 parseargs(&argd, &argv);
@@ -24,8 +70,25 @@ real superuniform(int n) {
     return 1 - uniform()**(1/(n + 1));
 }
 
-real x0 = 0;
-for (int i = 0; i < count; i++) {
-    x0 = x0 + superuniform(count - i - 1) * (1 - x0);
-    printf("%g\n", x0);
+real[count] sample_mean = {0, ...};
+
+for (int j = 0; j < trials; j++) {
+    real x0 = 0;
+    for (int i = 0; i < count; i++) {
+	x0 = x0 + superuniform(count - i - 1) * (1 - x0);
+	sample_mean[i] += x0;
+    }
 }
+
+real[count] good_mean = {0, ...};
+
+for (int j = 0; j < trials; j++) {
+    real[count] variate = { [i] = uniform() };
+    sort(&variate);
+    for (int i = 0; i < count; i++)
+        good_mean[i] += variate[i];
+}
+
+for (int i = 0; i < count; i++)
+     printf("%d %f\n", i, (sample_mean[i] - good_mean[i]) / trials);
+
