@@ -32,7 +32,7 @@ static double avar = M_PI / 16;
 static double pvar = 0.1;
 
 static double uniform(void) {
-    return random() / (double) INT_MAX;
+    return random() / (double) RAND_MAX;
 }
 
 static double gaussian(double sd) {
