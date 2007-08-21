@@ -5,7 +5,7 @@ CFLAGS = -g -Wall -O4
 LIBS = -lm
 EPS = bars.eps track-naive-100.eps track-optimal-100.eps times.eps
 
-bpf: bpf.c
+bpf: bpf.c uniform.h erfinv.h gaussian-erfinv.h
 	$(CC) $(CFLAGS) -o bpf bpf.c $(LIBS)
 
 all: bpf ltrs.dvi
