@@ -9,8 +9,9 @@
 #include <stdio.h>
 #include <math.h>
 #include <stdlib.h>
-#include <limits.h>
 #include <string.h>
+#include "uniform.h"
+#include "gaussian-erfinv.h"
 
 typedef struct { double x, y; } ccoord;
 typedef struct { double r, t; } acoord;
@@ -30,24 +31,6 @@ static resample *resampler = resample_naive;
 
 static double avar = M_PI / 16;
 static double pvar = 0.1;
-
-static double uniform(void) {
-    return random() / (double) RAND_MAX;
-}
-
-static double gaussian(double sd) {
-    double x1, w, y1;
-
-    do {
-	x1 = 2.0 * uniform() - 1.0;
-	double x2 = 2.0 * uniform() - 1.0;
-	w = x1 * x1 + x2 * x2;
-    } while ( w >= 1.0 );
-
-    w = sqrt( (-2.0 * log( w ) ) / w );
-    y1 = x1 * w;
-    return y1 * sd;
-}
 
 static void update_state(state *p, double dt) {
     double r0 = p->vel.r + gaussian(pvar);
