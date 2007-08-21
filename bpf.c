@@ -10,8 +10,7 @@
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
-#include "uniform.h"
-#include "gaussian-erfinv.h"
+#include "ziggurat/random.h"
 
 typedef struct { float x, y; } ccoord;
 typedef struct { float r, t; } acoord;

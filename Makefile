@@ -2,7 +2,7 @@ CC = gcc
 #CFLAGS = -g -Wall -O4 -pg
 #LIBS = -lm_p
 CFLAGS = -g -Wall -O4
-LIBS = -lm
+LIBS = -Lziggurat -lrandom -lm
 EPS = bars.eps track-naive-100.eps track-optimal-100.eps times.eps
 
 bpf: bpf.c uniform.h erfinv.h gaussian-erfinv.h
