@@ -1,0 +1,62 @@
+/* Copyright (C) 2007 Bart Massey
+   ALL RIGHTS RESERVED */
+
+import Math;
+autoimport PRNG;
+
+real uniform() {
+    return imprecise(randbits(256) / 2**256, 256);
+}
+
+real erfinv(real x) {
+    assert(0.0 <= x && x < 1.0, "range error");
+    if (x <= 0.4)
+        return -0.003241691 + x * 0.922235728;
+    if (x <= 0.9)
+        return 0.369856315 + x * (-0.598012907 + x * 1.602813513);
+    if (x <= 0.99)
+        return -694.991315729 + x * (2257.764033265 + x * (-2444.745829241 + x * 883.953153923));
+    if (x <= 0.999)
+        return -717260.870032080 + x * (2168591.882440044 + x * (-2185555.532633572 + x * 734226.973095943));
+    return 1.797538873832232 + 0.004 * exp((x - 0.99) * 600);
+}
+
+real gaussian(real sd) {
+    real r = 2.0 * uniform() - 1.0;
+    bool neg = false;
+    if (r < 0) {
+	neg = true;
+	r = -r;
+    }
+    real y = erfinv(r);
+    if (neg)
+	return  -y * sd;
+    return y * sd;
+}
+
+
+real[100000] variate = { [i] = gaussian(1.0) };
+
+int[100] bin = {0, ...};
+
+real maxv = 0;
+for (int i = 0; i < dim(variate); i++) {
+    real v = abs(variate[i]);
+    if (v > maxv)
+	maxv = v;
+}
+real binwidth = 2 * maxv / (dim(bin) - 1);
+
+for (int i = 0; i < dim(variate); i++) {
+    int j = floor((variate[i] + maxv) / binwidth);
+    bin[j]++;
+}
+
+real gs(real x) {
+    return exp(-(x * x));
+}
+
+for (int i = 0; i < dim(bin); i++) {
+     int j = i - dim(bin) // 2;
+     printf("%f %d %f\n", j * binwidth, bin[i], 4500 * gs(abs(j) * binwidth));
+}
