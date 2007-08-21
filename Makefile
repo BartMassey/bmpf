@@ -1,11 +1,14 @@
 CC = gcc
+#CFLAGS = -g -Wall -O4 -pg
+#LIBS = -lm_p
 CFLAGS = -g -Wall -O4
+LIBS = -lm
 EPS = bars.eps track-naive-100.eps track-optimal-100.eps times.eps
 
-all: bpf ltrs.dvi
-
 bpf: bpf.c
-	$(CC) $(CFLAGS) -o bpf bpf.c -lm
+	$(CC) $(CFLAGS) -o bpf bpf.c $(LIBS)
+
+all: bpf ltrs.dvi
 
 ltrs.dvi: ltrs.tex $(EPS)
 	latex ltrs
@@ -24,4 +27,4 @@ track-optimal-100.eps: plottrack.sh bench/optimal-100.dat
 	sh plottrack.sh bench/optimal-100.dat > track-optimal-100.eps
 
 clean:
-	-rm -f bars.eps ltrs.dvi bpf
+	-rm -f *.eps ltrs.dvi bpf gmon.out
