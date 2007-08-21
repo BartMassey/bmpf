@@ -21,10 +21,12 @@ times.eps: plottimes.gnuplot
 	gnuplot plottimes.gnuplot > times.eps
 
 track-naive-100.eps: plottrack.sh bench/naive-100.dat
-	sh plottrack.sh bench/naive-100.dat > track-naive-100.eps
+	sh plottrack.sh bench/naive-100.dat | \
+	  gnuplot > track-naive-100.eps
 
 track-optimal-100.eps: plottrack.sh bench/optimal-100.dat
-	sh plottrack.sh bench/optimal-100.dat > track-optimal-100.eps
+	sh plottrack.sh bench/optimal-100.dat | \
+	  gnuplot > track-optimal-100.eps
 
 clean:
 	-rm -f *.eps ltrs.dvi bpf gmon.out
