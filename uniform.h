@@ -3,8 +3,8 @@
 
 #include <limits.h>
 
-static double uniform(void) {
-    return random() / (double) RAND_MAX;
+static float uniform(void) {
+    return random() / (float) RAND_MAX;
 }
 
 #endif
