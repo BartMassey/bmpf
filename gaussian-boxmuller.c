@@ -1,5 +1,11 @@
-/* Copryight (C) 2007 Bart Massey
-   ALL RIGHTS RESERVED */
+/*
+ * Copyright (C) 2007 Bart Massey
+ * ALL RIGHTS RESERVED
+ * 
+ * This program is licensed under the GPL version 2 or GPL
+ * version 3 or later.  Please see the file COPYING in the
+ * source distribution of this software for license terms.
+ */
 
 /* Gaussian PRNG based on Box-Muller transform,
    with saved extra variable to cut costs. */
