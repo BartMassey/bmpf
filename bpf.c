@@ -16,7 +16,7 @@
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
-#include "ziggurat/random.h"
+#include <ziggurat/random.h>
 
 typedef struct { float x, y; } ccoord;
 typedef struct { float r, t; } acoord;

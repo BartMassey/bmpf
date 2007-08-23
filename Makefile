@@ -7,9 +7,9 @@
 
 CC = gcc
 #CFLAGS = -g -Wall -O4 -pg
-#LIBS = -Lziggurat -lrandom_p -lm_p
+#LIBS = -L/local/lib/ziggurat -lrandom_p -lm_p
 CFLAGS = -g -Wall -O4
-LIBS = -Lziggurat -lrandom -lm
+LIBS = -L/local/lib/ziggurat -lrandom -lm
 EPS = bars.eps track-naive-100.eps track-optimal-100.eps times.eps
 
 bpf: bpf.c uniform.h erfinv.h gaussian-erfinv.h
