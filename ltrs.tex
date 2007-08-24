@@ -39,7 +39,7 @@
 
 \section{Introduction}
 
-  Bayesian Particle Filtering (BPF)~\cite{?} is an exciting
+  Bayesian Particle Filtering (BPF)~\cite{bpf} is an exciting
   new methodology for state space tracking and sensor
   fusion.  The bottleneck step in BPF is weighted
   resampling: creating a new population of ``particles''
@@ -51,9 +51,9 @@
   although they seem not to be widely used in practice.
   Instead, typical BPF implementations will resample using
   the expensive $O(mn)$ algorithm, but only sporadically.  A
-  more recent approach is to use a linear time algorithm,
+  more promising approach is to use a linear time algorithm,
   but one that produces a sample that is only approximately
-  correctly weighted~\cite{?}.
+  correctly weighted~\cite{recount}.
 
   We introduce an algorithm with time complexity $O(m + n)$
   (requiring just the normal $O(m + n)$ space) that produces
@@ -591,5 +591,8 @@ In this section, we discuss some of them.
   Our C implementation of BPF with linear resampling
   described here is freely available under the GPL at
   \url{http://wiki.cs.pdx.edu/bartforge/bmpf}.
+
+\bibliographystyle{plain}
+\bibliography{ltrs}
 
 \end{document}
