@@ -5,49 +5,55 @@
 \usepackage{amsmath}
 \usepackage{amssymb}
 \usepackage{amscd}
+\usepackage{url}
 
 \newcommand{\asgn}{\,\,\leftarrow\,\,}
 \newcommand{\newcode}{\\*[0.5\baselineskip]}
-\newcommand{\Prob}{\textrm{Pr}}
+\newcommand{\Prob}{\text{Pr}}
+\newcommand{\hyperg}{{{{}_2}{F_1}}}
+\newcommand{\du}{{\text{d}u}}
 
 \title{Linear Time Weighted Resampling}
-\author{Bart Massey}
-\date{17 August 2007}
+\author{Bart Massey\\
+  Assoc. Prof. Computer Science\\
+  Portland State University\\
+  \url{bart@cs.pdx.edu}}
+\date{Draft of 24 August 2007\\{\em Do Not Distribute}}
 
 \begin{document}
   \maketitle
 
   \begin{abstract}
-  We describe an optimal algorithm for perfect weighted resampling
-  of a population, with time complexity $O(m + n)$ for
-  resampling $m$ inputs to produce $n$ outputs.  This
-  is a substantial performance improvement over
+  We describe an optimal algorithm for perfect weighted
+  resampling of a population, with time complexity $O(m +
+  n)$ for resampling $m$ inputs to produce $n$ outputs.
+  This is a substantial performance improvement over
   typically-used resampling algorithms, and a quality
-  improvement over the
-  approximate linear-time algorithm that represent the
-  state of the art.  Our resampling algorithm is also easily
-  parallelizable, with linear speedup.
-  Linear-time resampling yields
-  substantial improvements in our motivating example of
-  Bayesian Particle Filtering.
+  improvement over the approximate linear-time algorithm
+  that represent the state of the art.  Our resampling
+  algorithm is also easily parallelizable, with linear
+  speedup.  Linear-time resampling yields substantial
+  improvements in our motivating example of Bayesian
+  Particle Filtering.
   \end{abstract}
 
 \section{Introduction}
 
-  Bayesian Particle Filtering (BPF)~\cite{?} is an exciting new methodology
-  for state space tracking and sensor fusion.  The bottleneck
-  step in BPF is weighted resampling: creating a new
-  population of ``particles'' from an old population by
-  random sampling from the source population according to
-  the particle weights.    Consider resampling $m$ inputs to
-  produce $n$ outputs.  A standard na\"ive algorithm has time complexity
-  $O(mn)$. Algorithms with complexity $O(m + n \log m)$ are easy
-  to find, although they seem not to be widely used in
-  practice.  Instead, typical BPF implementations will resample
-  using the expensive $O(mn)$ algorithm, but only
-  sporadically.  A more recent approach is to use a linear
-  time algorithm, but one that produces a sample that is
-  only approximately correctly weighted~\cite{?}.
+  Bayesian Particle Filtering (BPF)~\cite{?} is an exciting
+  new methodology for state space tracking and sensor
+  fusion.  The bottleneck step in BPF is weighted
+  resampling: creating a new population of ``particles''
+  from an old population by random sampling from the source
+  population according to the particle weights.  Consider
+  resampling $m$ inputs to produce $n$ outputs.  A standard
+  na\"ive algorithm has time complexity $O(mn)$. Algorithms
+  with complexity $O(m + n \log m)$ are easy to find,
+  although they seem not to be widely used in practice.
+  Instead, typical BPF implementations will resample using
+  the expensive $O(mn)$ algorithm, but only sporadically.  A
+  more recent approach is to use a linear time algorithm,
+  but one that produces a sample that is only approximately
+  correctly weighted~\cite{?}.
 
   We introduce an algorithm with time complexity $O(m + n)$
   (requiring just the normal $O(m + n)$ space) that produces
@@ -67,7 +73,8 @@
   A good starting point for describing our algorithm is to
   review some resampling algorithms.  We describe our
   algorithm and report its effectiveness in a BPF
-  implementation.
+  implementation.  We conclude with a discussion of
+  remaining issues.
 
 \section{Weighted Resampling Algorithms}
 
@@ -271,6 +278,19 @@
   constant cost) we could make this approach run in time
   $O(m + n)$.  The next section shows how to achieve this.
 
+  Alternatively, if we could sort the variates in $O(n)$
+  time, we could get an $O(m + n)$ merge-based algorithm.
+  Given that what we are sorting is $n$ variates uniformly
+  distributed between $0$ and $1$, a radix sort should do
+  the trick here.  We are currently experimenting with this
+  approach; however, the constant factors in the running
+  time are expected to be poor for large $n$, since the
+  radix sort has extremely poor cache behavior.  In
+  Section~\ref{sec-segment} we suggest a hybrid of the radix
+  sort approach and a variant of the approach of the
+  next section that is expected to largely
+  solve that problem.
+
 \subsection{An Optimal $O(m + n)$ Resampling Algorithm}\label{sec-optimal}
 
   As discussed in the previous section, if we can generate
@@ -309,8 +329,8 @@
   In the limit as $T\rightarrow\infty$ our discrete
   approximation converges to an integral.  We have
     \begin{eqnarray*}
-      \mu &=& \frac{\int_{u=0}^{\mu_0}{(1-u)^n \textit{du}}}
-                   {\int_{u=0}^{1}{(1-u)^n \textit{du}}} \\
+      \mu &=& \frac{\int_{u=0}^{\mu_0}{(1-u)^n \du}}
+                   {\int_{u=0}^{1}{(1-u)^n \du}} \\
 	  &=& \frac{\left.\frac{-(1-u)^{n+1}}{n+1}\right|_{u=0}^{\mu_0}}
 		   {\left.\frac{-(1-u)^{n+1}}{n+1}\right|_{u=0}^{1}} \\
           &=& \frac{\frac{-1}{n+1}\left[(1-\mu_0)^{n+1}-1\right]}
@@ -398,48 +418,178 @@
 
 \section{Discussion}
 
+We have shown an $O(m + n)$ algorithm for perfect
+resampling, and an extremely fast BPF implementation based
+on this algorithm.  However, further speedups are possible.
+In this section, we discuss some of them.
+
+\subsection{Constant Factors}
+
+  In a typical noise model, there is one call
+  to a Gaussian-distributed pseudo-random number generator
+  and to the {\tt exp()} function per particle {\em per
+  sensor}: this is how the weights are updated.  This is the
+  current constant-factor bottleneck in the BPF implementation.
+
+  The cost of generating Gaussian pseudo-random numbers can
+  be reduced to insignificance by using Marsaglia and
+  Tsang's ``Ziggurat Method'' PRNG~\cite{ziggurat}.  We
+  observed an approximate doubling of speed in our BPF
+  implementation by switching to this PRNG, and it is now
+  far from being the bottleneck.
+
+  The {\tt exp()} bottleneck is harder.  One can always use
+  approximate functions, or change noise distributions
+  altogether.  Work is still underway in this area.
+
+  The remaining bottleneck in resampling itself is the cost
+  of the $O(n)$ calls to the {\tt pow()} function, each with
+  a slightly different argument.  These rational
+  exponentiations are computed during variate generation by
+  calling the standard math library function {\tt pow(x,y)}.
+  Since there is only one call to {\tt pow()} per particle,
+  but many calls to {\tt exp()} per particle, this is not
+  the bottleneck step for BPF.  However, it would be nice to
+  cut it down, and approaches are available.
+
+\subsubsection{Direct Generation of Variates}
+
+  One way around the {\tt pow()} bottleneck is to generate
+  random variates with distribution $(1 - x)^{n + 1}$ by
+  some less expensive method than that of
+  Section~\ref{sec-optimal}.  The Ziggurat method mentioned
+  previously would be about right, except that the desired
+  distribution is a two-argument function.  The most direct
+  approach would lead to generating $n$ sets of Ziggurat
+  tables, which would be prohibitively memory expensive for
+  large $n$.
+
+  We suspect that there is a generic rejection method for
+  variate generation that will work fine for large $n$. In
+  this regime, our probability expression becomes
+  self-similar, and we can very accurately approximate $$
+    (1 - x)^{an} \approx \left(1 - \frac{x}{a}\right)^n
+  $$
+  If this approximation is sufficiently accurate for some
+  purpose, it could be used directly to eliminate most
+  of the {\tt pow()} calls by building a Ziggurat PRNG for
+  $(1-x)^{n_0}$ for some reasonably large $n_0$---probably
+  around 30 or more.  The Ziggurat generator should by its
+  nature replace almost all of the {\tt pow()} calls with
+  simple table multiplies and compares.
+
+  Alternatively, one could build error bounds for the
+  approximation, and use these with a rejection method
+  generator that also would very occasionally call {\tt
+  pow()} in a corner case.
+
+\subsubsection{Segmentation}\label{sec-segment}
+
+  The concentration so far has been on generating the
+  uniform variates sequentially.  However, there are at
+  least two situations in which one would first like to
+  break up the variates into blocks which are treated
+  separately.
+
+  The first such situation is to combine direct generation
+  with the radix sorting approach discussed at the end of
+  Section~\ref{sec-merge}.  Imagine we could generate
+  ``breakpoints'' between blocks of $k$ variates for some
+  small $k$, say 100, in constant time.  We could then
+  generate $k$ variates uniformly and radix sort them in
+  time $O(k)$.  Because the blocks would be small, the radix
+  sort should hit the L0 cache and be fast, yet we would
+  divid the number of {\tt pow()} calls by $k$ over the
+  direct approach of Section~\ref{sec-optimal}.
+
+  The second reason to break the variates up into blocks is
+  for parallelization.  This is discussed further in
+  Section~\ref{sec-parallel}.
+
+  To break the variates up into blocks, we could try to
+  derive a direct expression for placing sample $k$ of $n$
+  for arbitrary $k$.  This would allow us to ``skip forward''
+  by $k$ samples and place a variate, then deal with the
+  intervening variates at our leisure.
+
+  We observe that if a uniform variate $\mu_k$ is at
+  position $k$ of $n$, $k - 1$ of the samples must have landed to the
+  left of $\mu_k$ and $n - k$ of the samples must have
+  landed to the right.  There are in general $\tbinom{n}{k-1}$
+  ways this can happen, so the probability of $\mu_k$ being
+  the $k^{\text{th}}$ sample is $$
+    p(\mu_k) = \text{Pr}(\mu_k\text{ is at position }k) =
+         \tbinom{n}{k - 1}(\mu_k)^{k-1}(1-\mu_k)^{n - k}
+  $$
+  The direct method used in Section~\ref{sec-optimal}
+  next requires computing the probability that a variate
+  $\mu$ is in the right position via $$
+    p(\mu) = \text{Pr}(\mu_k = \mu) =
+      \frac{\int_{u=0}^{\mu_k}{\tbinom{n}{k - 1}(\mu_k)^k(1-\mu_k)^{n - k}}\du}
+           {\int_{u=0}^{1}{\tbinom{n}{k - 1}(\mu_k)^k(1-\mu_k)^{n - k}}\du}
+  $$
+  The integral in the denominator can be calculated
+  directly. $$
+    \int_{u=0}^{1}{\tbinom{n}{k - 1}(\mu_k)^k(1-\mu_k)^{n - k}}\du = 
+        \tbinom{n}{k - 1}\frac{\Gamma(1 + n - k)\Gamma(k)}{\Gamma(n + 1)}
+  $$
+  Unfortunately, the integral in the numerator is more of a
+  mess: $$
+    \int_{u=0}^{\mu_k}{\tbinom{n}{k - 1}(\mu_k)^k(1-\mu_k)^{n - k}}\du =
+        \tbinom{n}{k - 1}(\mu_k)^k\,\hyperg(k, -n + k; k + 1; \mu_k)
+  $$
+  where $\hyperg$ is Gauss's hypergeometric function.
+
+  Any further progress in this direction appears to be
+  limited by the difficulty of solving $p(\mu)$
+  for $\mu_0$.  A rejection method for direction generation
+  of $\mu_0$ would probably be a better approach here---a
+  somewhat inefficient method would be fine, since few calls
+  would be made to this generator.
+  
+\subsection{Paralellization}\label{sec-parallel}
+
   Our optimal algorithm will parallelize reasonably well
-  with some additional work. We need to derive the general
-  direct expression for placing sample $k$ of $n$ for
-  arbitrary $k$.
+  with some additional work. 
   \begin{enumerate}
-  \item A master processor uses the general expression
-    we have derived to break up the array of variants
-    to be calculated by our $P$-processor
+  \item Each processor fills in a section of total
+    accumulated weights in the input particle array as
+    described in Section~\ref{sec-merge}.
+  \item In a separate pass, each processor adds the sum of
+    weights computed by the processor to its left to its
+    section of the total accumulated weights in the input
+    particle array.
+  \item A master processor uses one of the methods of
+    ``skipping ahead'' in the variate
+    sequence described in Section~\ref{sec-segment} to break up the
+    array of variates to be calculated by our $P$-processor
     machine into $P$ regions.
   \item Each processor indepedently fills in its section
     of variates in the manner described in Section~\ref{sec-optimal}.
-  \item Each processor fills in a section of total accumulated
-    weights in the input array as described in
-    Section~\ref{sec-merge}.
-  \item In a separate pass, each processor adds the sum of
-    weights to its left to its section of the total accumulated
-    weights in the input array.
   \item Each processor does a search for the start and end
-    of its section of the heap.  This can be done in time
-    $O(\log m)$ using binary search
-  \item Finally, each processor samples its section of heap
+    of its section of the input particle array---the section
+    whose total weights contain its variates.  This can be done in time
+    $O(\log m)$ using binary search, with an impressively
+    small constant factor.
+  \item Finally, each processor samples its section of the array
     using the {\em merge} algorithm of Section~\ref{sec-merge}.
   \end{enumerate}
   
-  An interesting open question is whether at reasonable
-  sample sizes there is any significant difference between
-  accurate weighted random sampling, and the simpler
-  strategy of shuffling the input samples and then selecting
-  uniformly from the weighted inputs using the {\em merge}
-  approach of Section~\ref{sec-merge}.  The latter approach
-  has the advantage that one avoids computing $n$ rational
-  exponentiations during variate generation, which may
-  significantly improve the constant factor at the expense
-  of accuracy.  The Central Limit Theorem strongly suggests
-  that the two approaches are largely equivalent.
 
 \section*{Acknowledgments}
 
   Thanks much to Jules Kongslie, Mark Jones, Dave Archer,
-  Jamey Sharp and Bryant York for conversations that led up
-  to this work.  Thanks also to Jules Kongslie and to James
-  McNames and his students for teaching me BPF.  It is my
-  $n^{\textrm{th}}$ approach, but this time it worked.
+  Jamey Sharp, Josh Triplett and Bryant York for
+  illuminating conversations during the discussion of this
+  work.  Thanks also to Jules Kongslie and to James McNames
+  and his students for teaching me BPF.  It is my
+  $n^{\text{th}}$ attempt to learn the topic, but this
+  time it worked.
+
+\section*{Availability}
+
+  Our C implementation of BPF with linear resampling
+  described here is freely available under the GPL at
+  \url{http://wiki.cs.pdx.edu/bartforge/bmpf}.
 
 \end{document}
