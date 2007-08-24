@@ -36,4 +36,4 @@ track-optimal-100.eps: plottrack.sh bench/optimal-100.dat
 	  gnuplot > track-optimal-100.eps
 
 clean:
-	-rm -f *.eps ltrs.dvi bpf gmon.out
+	-rm -f *.eps ltrs.dvi ltrs.log ltrs.ps bpf gmon.out
