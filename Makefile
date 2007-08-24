@@ -24,8 +24,8 @@ ltrs.dvi: ltrs.tex $(EPS)
 bars.eps: plotbars.5c
 	nickle plotbars.5c | gnuplot > bars.eps
 
-times.eps: plottimes.gnuplot
-	gnuplot plottimes.gnuplot > times.eps
+times.eps: plottimes.sh
+	sh plottimes.sh | gnuplot > times.eps
 
 track-naive-100.eps: plottrack.sh bench/naive-100.dat
 	sh plottrack.sh bench/naive-100.dat | \

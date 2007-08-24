@@ -7,8 +7,12 @@
 # distribution of this software for license terms.
 for a in optimal naive
 do
-  for t in 100 500 1000 5000 10000
+  t=100
+  incr=100
+  while [ $t -le 5000 ]
   do
+    if [ $t -ge 500 ] ; then incr=500 ; fi
     (time ./bpf $t $a >$a-$t.dat) 2>$a-$t.time
+    t=`expr $t + $incr`
   done
 done
