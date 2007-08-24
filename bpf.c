@@ -18,30 +18,30 @@
 #include <string.h>
 #include <ziggurat/random.h>
 
-typedef struct { float x, y; } ccoord;
-typedef struct { float r, t; } acoord;
+typedef struct { double x, y; } ccoord;
+typedef struct { double r, t; } acoord;
 typedef struct { ccoord posn; acoord vel; } state;
-typedef struct { state state; float weight; } particle_info;
+typedef struct { state state; double weight; } particle_info;
 
-typedef particle_info *resample(float);
+typedef particle_info *resample(double);
 
 static resample resample_naive, resample_optimal;
 
-static const float nsecs = 100;
-static const float dt = 0.1;
+static const double nsecs = 100;
+static const double dt = 0.1;
 
 int nparticles = 100;
 int sort = 0;
 static resample *resampler = resample_naive;
 
-static float avar = M_PI / 16;
-static float pvar = 0.1;
+static double avar = M_PI / 16;
+static double pvar = 0.1;
 
-static void update_state(state *p, float dt) {
-    float r0 = p->vel.r + gaussian(pvar);
-    float t0 = p->vel.t + gaussian(avar);
-    float x0 = p->posn.x + r0 * cos(t0) * dt;
-    float y0 = p->posn.y - r0 * sin(t0) * dt;
+static void update_state(state *p, double dt) {
+    double r0 = p->vel.r + gaussian(pvar);
+    double t0 = p->vel.t + gaussian(avar);
+    double x0 = p->posn.x + r0 * cos(t0) * dt;
+    double y0 = p->posn.y - r0 * sin(t0) * dt;
 
     p->vel.r = r0;
     p->vel.t = t0;
@@ -76,35 +76,34 @@ ccoord gps_measure(void) {
     return result;
 }
 
-acoord imu_measure(float dt) {
+acoord imu_measure(double dt) {
     acoord result = vehicle.vel;
     result.r += gaussian(pvar / dt);
     result.t += gaussian(avar / dt);
     return result;
 }
 
-/* XXX is this right? */
-float gprob(float delta, float sd) {
-    return expf(-(delta * delta * sd));
+double gprob(double delta, double sd) {
+    /* return 1.0 - erf(abs(delta) * M_SQRT1_2 / sd); ??? */
+    /* return exp(-0.5 * delta * delta / (sd * sd)); ??? */
+    return exp(-delta * delta * sd);
 }
 
-float gps_prob(state *s, ccoord *gps) {
-    float px = gprob(s->posn.x - gps->x, pvar);
-    float py = gprob(s->posn.y - gps->y, pvar);
-    /* XXX is this right? */
+double gps_prob(state *s, ccoord *gps) {
+    double px = gprob(s->posn.x - gps->x, pvar);
+    double py = gprob(s->posn.y - gps->y, pvar);
     return px * py;
 }
 
-float imu_prob(state *s, acoord *imu) {
-    float pr = gprob(s->vel.r - imu->r, pvar);
-    float pt = gprob(s->vel.t - imu->t, avar);
-    /* XXX is this right? */
+double imu_prob(state *s, acoord *imu, double dt) {
+    double pr = gprob(s->vel.r - imu->r, pvar / dt);
+    double pt = gprob(s->vel.t - imu->t, avar / dt);
     return pr * pt;
 }
 
-float sum_weights(void) {
+double sum_weights(void) {
     int i;
-    float t = particle[0].weight;
+    double t = particle[0].weight;
     for (i = 1; i < nparticles; i++)
 	t += particle[i].weight;
     return t;
@@ -118,10 +117,10 @@ int argmax_weight(void) {
     return i;
 }
 
-particle_info *weighted_sample(float scale) {
+particle_info *weighted_sample(double scale) {
     int i;
-    float w = uniform() * scale;
-    float t = 0;
+    double w = uniform() * scale;
+    double t = 0;
     for (i = 0; i < nparticles; i++) {
 	t += particle[i].weight;
 	if (t >= w)
@@ -131,7 +130,7 @@ particle_info *weighted_sample(float scale) {
     abort();
 }
 
-particle_info *resample_naive(float scale) {
+particle_info *resample_naive(double scale) {
     particle_info *newp = particle_states[!which_particle];
     int i;
     for (i = 0; i < nparticles; i++)
@@ -139,15 +138,15 @@ particle_info *resample_naive(float scale) {
     return newp;
 }
 
-float nform(int n) {
+double nform(int n) {
     return 1.0 - pow(uniform(), 1.0 / (n + 1));
 }
 
-particle_info *resample_optimal(float scale) {
+particle_info *resample_optimal(double scale) {
     particle_info *newp = particle_states[!which_particle];
-    float u0 = nform(nparticles - 1) * scale;
+    double u0 = nform(nparticles - 1) * scale;
     int i, j = 0;
-    float t = 0;
+    double t = 0;
     for (i = 0; i < nparticles; i++) {
         while (t + particle[j].weight < u0 && j < nparticles)
 	    t += particle[j++].weight;
@@ -158,7 +157,7 @@ particle_info *resample_optimal(float scale) {
     return newp;
 }
 
-inline static int sgn(float x) {
+inline static int sgn(double x) {
     if (x < 0)
 	return -1;
     if (x > 0)
@@ -172,7 +171,7 @@ static int cmp_weight(const void *w1, const void *w2) {
     return -sgn(p1->weight - p2->weight);
 }
 
-state bpf_step(ccoord *gps, acoord *imu, float dt) {
+state bpf_step(ccoord *gps, acoord *imu, double dt) {
     int i;
     particle_info *newp;
     /* update particles */
@@ -180,12 +179,12 @@ state bpf_step(ccoord *gps, acoord *imu, float dt) {
 	update_state(&particle[i].state, dt);
     /* do probabilistic weighting */
     for (i = 0; i < nparticles; i++) {
-	float gp = gps_prob(&particle[i].state, gps);
-	float ip = imu_prob(&particle[i].state, imu);
+	double gp = gps_prob(&particle[i].state, gps);
+	double ip = imu_prob(&particle[i].state, imu, dt);
         particle[i].weight = gp * ip;
     }
     /* get normalizing constant */
-    float tweight = sum_weights();
+    double tweight = sum_weights();
     /* resample */
     if (sort)
 	qsort(particle, nparticles, sizeof(particle[0]), cmp_weight);
@@ -199,7 +198,7 @@ state bpf_step(ccoord *gps, acoord *imu, float dt) {
 }
 
 void run(void) {
-    float t;
+    double t;
     init_particles();
     for(t = 0; t <= nsecs; t += dt) {
 	update_state(&vehicle, dt);
