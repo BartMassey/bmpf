@@ -18,6 +18,8 @@
 #include <string.h>
 #include <ziggurat/random.h>
 
+#define DW 1.0e-9
+
 typedef struct { double x, y; } ccoord;
 typedef struct { double r, t; } acoord;
 typedef struct { ccoord posn; acoord vel; } state;
@@ -158,9 +160,11 @@ static particle_info *resample_optimal(double scale) {
 }
 
 static double *tweight;
+static int total_depth;
 
 static particle_info *logm_weighted_sample(double scale) {
     double w = uniform() * scale;
+    double dw = 1.0 + DW;
     int i = 0;
     while(i < nparticles) {
 	int left = 2 * i + 1;
@@ -168,11 +172,12 @@ static particle_info *logm_weighted_sample(double scale) {
 	double lweight = 0;
 	if (left < nparticles)
 	    lweight = tweight[left];
-	if (w * (1.0 + 1.0e5) < lweight) {
+	total_depth++;
+	if (w * dw < lweight) {
 	    i = left;
 	    continue;
 	}
-	if (w <= lweight + particle[i].weight + w * (1.0 + 1.0e5))
+	if (w <= lweight + particle[i].weight + w * dw)
 	    return &particle[i];
 	i = right;
     }
@@ -194,8 +199,9 @@ static particle_info *resample_logm(double scale) {
 	if (right < nparticles)
 	    tweight[i] += tweight[right];
     }
-    assert(tweight[0] * (1.0 - 1e5) <= scale &&
-	   scale <= tweight[0] * (1.0 + 1e5));
+    assert(tweight[0] * (1.0 - DW) <= scale &&
+	   scale <= tweight[0] * (1.0 + DW));
+    total_depth = 0;
     for (i = 0; i < nparticles; i++)
         newp[i] = *logm_weighted_sample(scale);
     return newp;
