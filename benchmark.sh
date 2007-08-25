@@ -5,7 +5,7 @@
 # [This program is licensed under the GPL version 2 or GPL version 3 or later.]
 # Please see the file COPYING in the source
 # distribution of this software for license terms.
-if [ $# -eq 0 ] ; then set none optimal logm logmsort naivesort naive ; fi
+if [ $# -eq 0 ] ; then set regular optimal logm logmsort naivesort naive ; fi
 for a in "$@"
 do
   p=100

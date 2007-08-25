@@ -27,7 +27,8 @@ typedef struct { state state; double weight; } particle_info;
 
 typedef particle_info *resample(double);
 
-static resample resample_naive, resample_optimal, resample_logm, resample_none;
+static resample resample_naive, resample_optimal,
+       resample_logm, resample_regular;
 
 static const double nsecs = 100;
 static const double dt = 0.1;
@@ -152,23 +153,53 @@ static particle_info *resample_optimal(double scale) {
     for (i = 0; i < nparticles; i++) {
         while (t + particle[j].weight < u0 && j < nparticles)
 	    t += particle[j++].weight;
-	assert(j < nparticles);
+#ifdef DEBUG_OPTIMAL
+	if (j >= nparticles) {
+	    fprintf(stderr, "fell off end s=%g t=%g u=%g\n",
+		    scale, t, u0);
+	    abort();
+	}
+#endif
 	newp[i] = particle[j];
 	u0 = u0 + (scale - u0) * nform(nparticles - i - 1);
     }
     return newp;
 }
 
-static particle_info *resample_none(double scale) {
-    int i;
+static particle_info *resample_regular(double scale) {
+    int i, j;
+    double u0, t = 0;
     particle_info *newp = particle_states[!which_particle];
-    for (i = 0; i < nparticles; i++)
-	newp[i] = particle[i];
+    /* shuffle */
+    for (i = 0; i < nparticles - 1; i++) {
+	j = rand32() % (nparticles - i) + i;
+	particle_info ptmp = particle[j];
+	particle[j] = particle[i];
+	particle[i] = ptmp;
+    }
+    /* merge */
+    u0 = scale / (nparticles + 1);
+    j = 0;
+    for (i = 0; i < nparticles; i++ ) {
+        while (t + particle[j].weight < u0 && j < nparticles)
+	    t += particle[j++].weight;
+#ifdef DEBUG_REGULAR
+	if (j >= nparticles) {
+	    fprintf(stderr, "fell off end s=%.14g t=%.14g u=%.14g\n",
+		    scale, t, u0);
+	    abort();
+	}
+#endif
+	newp[i] = particle[j];
+	u0 += scale / (nparticles + 1);
+    }
     return newp;
 }
 
 static double *tweight;
+#ifdef DEBUG_LOGM
 static int total_depth;
+#endif
 
 static particle_info *logm_weighted_sample(double scale) {
     double w = uniform() * scale;
@@ -179,7 +210,9 @@ static particle_info *logm_weighted_sample(double scale) {
 	double lweight = 0;
 	if (left < nparticles)
 	    lweight = tweight[left];
+#ifdef DEBUG_LOGM
 	total_depth++;
+#endif
 	if (w < lweight * (1.0 - DW)) {
 	    i = left;
 	    continue;
@@ -209,10 +242,12 @@ static particle_info *resample_logm(double scale) {
     }
     assert(tweight[0] * (1.0 - DW) <= scale &&
 	   scale <= tweight[0] * (1.0 + DW));
+#ifdef DEBUG_LOGM
     total_depth = 0;
+#endif
     for (i = 0; i < nparticles; i++)
         newp[i] = *logm_weighted_sample(scale);
-#ifdef DEBUG_RESAMPLE
+#ifdef DEBUG_LOGM
     fprintf(stderr, "%f\n", total_depth / (double) nparticles);
 #endif
     return newp;
@@ -290,8 +325,8 @@ int main(int argc, char **argv) {
 	    resampler = resample_logm;
 	else if (!strcmp(argv[2], "optimal"))
 	    resampler = resample_optimal;
-	else if (!strcmp(argv[2], "none"))
-	    resampler = resample_none;
+	else if (!strcmp(argv[2], "regular"))
+	    resampler = resample_regular;
 	else
 	    abort();
     }
