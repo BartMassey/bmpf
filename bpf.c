@@ -168,15 +168,17 @@ static particle_info *logm_weighted_sample(double scale) {
 	double lweight = 0;
 	if (left < nparticles)
 	    lweight = tweight[left];
-	if (w < lweight) {
+	if (w * (1.0 + 1.0e5) < lweight) {
 	    i = left;
 	    continue;
 	}
-	if (w <= lweight + particle[i].weight)
+	if (w <= lweight + particle[i].weight + w * (1.0 + 1.0e5))
 	    return &particle[i];
 	i = right;
     }
-    fprintf(stderr, "fell off tree on %g\n", w);
+    i = (i - 1) / 2;
+    fprintf(stderr, "fell off tree on %g with i=%d, w[i]=%g\n",
+	    w, i, particle[i].weight);
     abort();
 }
 
@@ -192,6 +194,8 @@ static particle_info *resample_logm(double scale) {
 	if (right < nparticles)
 	    tweight[i] += tweight[right];
     }
+    assert(tweight[0] * (1.0 - 1e5) <= scale &&
+	   scale <= tweight[0] * (1.0 + 1e5));
     for (i = 0; i < nparticles; i++)
         newp[i] = *logm_weighted_sample(scale);
     return newp;
