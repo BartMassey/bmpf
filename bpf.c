@@ -30,8 +30,8 @@ static resample resample_naive, resample_optimal;
 static const double nsecs = 100;
 static const double dt = 0.1;
 
-int nparticles = 100;
-int sort = 0;
+static int nparticles = 100;
+static int sort = 0;
 static resample *resampler = resample_naive;
 
 static double avar = M_PI / 16;
@@ -55,7 +55,7 @@ static particle_info *particle_states[2];
 static int which_particle;
 static particle_info *particle;
 
-void init_particles(void) {
+static void init_particles(void) {
     int i;
     for (i = 0; i < 2; i++)
 	particle_states[i] = malloc(nparticles * sizeof(*particle_states[0]));
@@ -69,39 +69,39 @@ void init_particles(void) {
     }
 }
 
-ccoord gps_measure(void) {
+static ccoord gps_measure(void) {
     ccoord result = vehicle.posn;
     result.x += gaussian(pvar);
     result.y += gaussian(pvar);
     return result;
 }
 
-acoord imu_measure(double dt) {
+static acoord imu_measure(double dt) {
     acoord result = vehicle.vel;
     result.r += gaussian(pvar / dt);
     result.t += gaussian(avar / dt);
     return result;
 }
 
-double gprob(double delta, double sd) {
+static double gprob(double delta, double sd) {
     /* return 1.0 - erf(abs(delta) * M_SQRT1_2 / sd); ??? */
     /* return exp(-0.5 * delta * delta / (sd * sd)); ??? */
     return exp(-delta * delta * sd);
 }
 
-double gps_prob(state *s, ccoord *gps) {
+static double gps_prob(state *s, ccoord *gps) {
     double px = gprob(s->posn.x - gps->x, pvar);
     double py = gprob(s->posn.y - gps->y, pvar);
     return px * py;
 }
 
-double imu_prob(state *s, acoord *imu, double dt) {
+static double imu_prob(state *s, acoord *imu, double dt) {
     double pr = gprob(s->vel.r - imu->r, pvar / dt);
     double pt = gprob(s->vel.t - imu->t, avar / dt);
     return pr * pt;
 }
 
-double sum_weights(void) {
+static double sum_weights(void) {
     int i;
     double t = particle[0].weight;
     for (i = 1; i < nparticles; i++)
@@ -109,7 +109,7 @@ double sum_weights(void) {
     return t;
 }
 
-int argmax_weight(void) {
+static int argmax_weight(void) {
     int i = 0, j;
     for (j = 1; j < nparticles; j++)
 	if (particle[j].weight > particle[i].weight)
@@ -117,7 +117,7 @@ int argmax_weight(void) {
     return i;
 }
 
-particle_info *weighted_sample(double scale) {
+static particle_info *weighted_sample(double scale) {
     int i;
     double w = uniform() * scale;
     double t = 0;
@@ -130,7 +130,7 @@ particle_info *weighted_sample(double scale) {
     abort();
 }
 
-particle_info *resample_naive(double scale) {
+static particle_info *resample_naive(double scale) {
     particle_info *newp = particle_states[!which_particle];
     int i;
     for (i = 0; i < nparticles; i++)
@@ -138,11 +138,11 @@ particle_info *resample_naive(double scale) {
     return newp;
 }
 
-double nform(int n) {
+static double nform(int n) {
     return 1.0 - pow(uniform(), 1.0 / (n + 1));
 }
 
-particle_info *resample_optimal(double scale) {
+static particle_info *resample_optimal(double scale) {
     particle_info *newp = particle_states[!which_particle];
     double u0 = nform(nparticles - 1) * scale;
     int i, j = 0;
@@ -154,6 +154,46 @@ particle_info *resample_optimal(double scale) {
 	newp[i] = particle[j];
 	u0 = u0 + (scale - u0) * nform(nparticles - i - 1);
     }
+    return newp;
+}
+
+static double *tweight;
+
+static particle_info *logm_weighted_sample(double scale) {
+    double w = uniform() * scale;
+    int i = 0;
+    while(i < nparticles) {
+	int left = 2 * i + 1;
+	int right = 2 * i + 2;
+	double lweight = 0;
+	if (left < nparticles)
+	    lweight = tweight[left];
+	if (w < lweight) {
+	    i = left;
+	    continue;
+	}
+	if (w <= lweight + particle[i].weight)
+	    return &particle[i];
+	i = right;
+    }
+    fprintf(stderr, "fell off tree on %g\n", w);
+    abort();
+}
+
+static particle_info *resample_logm(double scale) {
+    int i;
+    particle_info *newp = particle_states[!which_particle];
+    for (i = nparticles - 1; i >= 0; --i) {
+	int left = 2 * i + 1;
+	int right = 2 * i + 2;
+	tweight[i] = particle[i].weight;
+	if (left < nparticles)
+	    tweight[i] += tweight[left];
+	if (right < nparticles)
+	    tweight[i] += tweight[right];
+    }
+    for (i = 0; i < nparticles; i++)
+        newp[i] = *logm_weighted_sample(scale);
     return newp;
 }
 
@@ -171,7 +211,7 @@ static int cmp_weight(const void *w1, const void *w2) {
     return -sgn(p1->weight - p2->weight);
 }
 
-state bpf_step(ccoord *gps, acoord *imu, double dt) {
+static state bpf_step(ccoord *gps, acoord *imu, double dt) {
     int i;
     particle_info *newp;
     /* update particles */
@@ -197,9 +237,10 @@ state bpf_step(ccoord *gps, acoord *imu, double dt) {
     return best;
 }
 
-void run(void) {
+static void run(void) {
     double t;
     init_particles();
+    tweight = malloc(nparticles * sizeof(tweight[0]));
     for(t = 0; t <= nsecs; t += dt) {
 	update_state(&vehicle, dt);
 	printf("%g %g ", vehicle.posn.x, vehicle.posn.y);
@@ -217,6 +258,8 @@ int main(int argc, char **argv) {
     if (argc > 2) {
 	if (!strcmp(argv[2], "naive"))
 	    resampler = resample_naive;
+	else if (!strcmp(argv[2], "logm"))
+	    resampler = resample_logm;
 	else if (!strcmp(argv[2], "optimal"))
 	    resampler = resample_optimal;
 	else
