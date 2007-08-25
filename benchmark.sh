@@ -5,7 +5,8 @@
 # [This program is licensed under the GPL version 2 or GPL version 3 or later.]
 # Please see the file COPYING in the source
 # distribution of this software for license terms.
-for a in optimal logm logmsort naivesort naive
+if [ $# -eq 0 ] ; then set none optimal logm logmsort naivesort naive ; fi
+for a in "$@"
 do
   p=100
   incr=100
@@ -29,4 +30,5 @@ do
     if [ $p -ge 50000 ] ; then incr=25000 ; fi
     p=`expr $p + $incr`
   done
+  cat benchtmp/$a-*.plot | sort -n > benchtmp/$a.plot
 done

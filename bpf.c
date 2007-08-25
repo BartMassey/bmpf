@@ -27,7 +27,7 @@ typedef struct { state state; double weight; } particle_info;
 
 typedef particle_info *resample(double);
 
-static resample resample_naive, resample_optimal;
+static resample resample_naive, resample_optimal, resample_logm, resample_none;
 
 static const double nsecs = 100;
 static const double dt = 0.1;
@@ -159,6 +159,14 @@ static particle_info *resample_optimal(double scale) {
     return newp;
 }
 
+static particle_info *resample_none(double scale) {
+    int i;
+    particle_info *newp = particle_states[!which_particle];
+    for (i = 0; i < nparticles; i++)
+	newp[i] = particle[i];
+    return newp;
+}
+
 static double *tweight;
 static int total_depth;
 
@@ -282,6 +290,8 @@ int main(int argc, char **argv) {
 	    resampler = resample_logm;
 	else if (!strcmp(argv[2], "optimal"))
 	    resampler = resample_optimal;
+	else if (!strcmp(argv[2], "none"))
+	    resampler = resample_none;
 	else
 	    abort();
     }
