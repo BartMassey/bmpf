@@ -164,7 +164,6 @@ static int total_depth;
 
 static particle_info *logm_weighted_sample(double scale) {
     double w = uniform() * scale;
-    double dw = 1.0 + DW;
     int i = 0;
     while(i < nparticles) {
 	int left = 2 * i + 1;
@@ -173,12 +172,13 @@ static particle_info *logm_weighted_sample(double scale) {
 	if (left < nparticles)
 	    lweight = tweight[left];
 	total_depth++;
-	if (w * dw < lweight) {
+	if (w < lweight * (1.0 - DW)) {
 	    i = left;
 	    continue;
 	}
-	if (w <= lweight + particle[i].weight + w * dw)
+	if (w <= lweight * (1.0 + DW) + particle[i].weight)
 	    return &particle[i];
+	w -= lweight + particle[i].weight;
 	i = right;
     }
     i = (i - 1) / 2;
@@ -204,6 +204,9 @@ static particle_info *resample_logm(double scale) {
     total_depth = 0;
     for (i = 0; i < nparticles; i++)
         newp[i] = *logm_weighted_sample(scale);
+#ifdef DEBUG_RESAMPLE
+    fprintf(stderr, "%f\n", total_depth / (double) nparticles);
+#endif
     return newp;
 }
 
