@@ -1,7 +1,8 @@
 #!/bin/sh
 PGM="`basename $0`"
-USAGE="$PGM: usage: $PGM [-p <n>]"
+USAGE="$PGM: usage: $PGM [-p <n>] [<dir>]"
 FILTER=false
+DIR=""
 while [ $# -gt 0 ]
 do
   case $1 in
@@ -14,11 +15,17 @@ do
 	exit 1
       fi
       ;;
-  *)  echo "$USAGE" >&2
-      exit 1
+  *)  break
       ;;
   esac
 done
+case $# in
+  0) ;;
+  1) DIR="$1" ;;
+  *) echo "$USAGE" >&2
+     exit 1
+     ;;
+esac
 
 $FILTER && echo "set key left"
 cat <<'EOF'
@@ -26,22 +33,21 @@ set terminal postscript eps
 set ylabel 'time (secs for 1000 steps)'
 set xlabel 'particles'
 set key box
+set style data linespoints
 plot \
-     '-' with linespoints title 'BPF with naive resampling', \
-     '-' with linespoints title 'BPF with naive resampling and presort', \
-     '-' with linespoints title 'BPF with heap-based resampling and presort', \
-     '-' with linespoints title 'BPF with heap-based resampling', \
-     '-' with linespoints title 'BPF with optimal resampling', \
-     '-' with linespoints title 'BPF with regular resampling'
 EOF
-for a in naive naivesort logmsort logm optimal regular
+while read a t
+do
+     echo "'-' title '$t'"
+done <algorithms | sed -e 's/$/, \\/' -e '$s/, \\$//'
+while read a t
 do
   if $FILTER
   then
-    awk "\$1<=$FILTERVAL{print \$0;}" <$a.plot
+    awk "\$1<=$FILTERVAL{print \$0;}" <"$DIR"/$a.plot
   else
-    cat $a.plot
+    cat "$DIR"/$a.plot
   fi
   echo 'e'
-done
+done <algorithms
 #echo 'pause -1'

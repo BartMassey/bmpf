@@ -11,9 +11,9 @@ CC = gcc
 CFLAGS = -g -Wall -O4
 LIBS = -L/local/lib/ziggurat -lrandom -lm
 EPS = bars.eps track-naive-100.eps track-optimal-100.eps \
-      timeszoom.eps times.eps
-PLOTS = bench/optimal.plot bench/logm.plot bench/logmsort.plot \
-        bench/naivesort.plot bench/naive.plot
+      times.eps timeszoom.eps timeszoom2.eps
+PLOTS = bench/regular.plot bench/optimal.plot bench/logm.plot \
+        bench/logmsort.plot bench/naivesort.plot bench/naive.plot
 
 bpf: bpf.c uniform.h erfinv.h gaussian-erfinv.h
 	$(CC) $(CFLAGS) -o bpf bpf.c $(LIBS)
@@ -31,10 +31,13 @@ bars.eps: plotbars.5c
 	nickle plotbars.5c | gnuplot > bars.eps
 
 times.eps: plottimes.sh $(PLOTS)
-	( cd bench && sh ../plottimes.sh ) | gnuplot > times.eps
+	sh plottimes.sh bench | gnuplot > times.eps
 
 timeszoom.eps: plottimes.sh $(PLOTS)
-	( cd bench && sh ../plottimes.sh -p 700 ) | gnuplot > timeszoom.eps
+	sh plottimes.sh -p 700 bench | gnuplot > timeszoom.eps
+
+timeszoom2.eps: plottimes.sh $(PLOTS)
+	sh plottimes.sh -p 100 bench | gnuplot > timeszoom2.eps
 
 track-naive-100.eps: plottrack.sh bench/naive-100.dat
 	sh plottrack.sh bench/naive-100.dat | \
