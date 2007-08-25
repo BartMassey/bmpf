@@ -3,11 +3,14 @@ cat <<'EOF'
 set terminal postscript eps
 set ylabel 'time (s)'
 set xlabel 'particles'
-plot '-' with linespoints title 'BPF with naive resampling', \
+plot \
+     '-' with linespoints title 'BPF with naive resampling', \
+     '-' with linespoints title 'BPF with naive resampling and presort', \
+     '-' with linespoints title 'BPF with logm resampling and presort', \
+     '-' with linespoints title 'BPF with logm resampling', \
      '-' with linespoints title 'BPF with optimal resampling'
 EOF
-cd bench
-for a in naive optimal
+for a in naive naivesort logmsort logm optimal
 do
   for f in $a-*.time
   do

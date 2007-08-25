@@ -260,18 +260,19 @@ int main(int argc, char **argv) {
     if (argc > 1)
 	nparticles = atoi(argv[1]);
     if (argc > 2) {
+	if (!strcmp(argv[2], "naivesort")) {
+	    sort = 1;
+	    argv[2] = "naive";
+	} else if (!strcmp(argv[2], "logmsort")) {
+	    sort = 1;
+	    argv[2] = "logm";
+	}
 	if (!strcmp(argv[2], "naive"))
 	    resampler = resample_naive;
 	else if (!strcmp(argv[2], "logm"))
 	    resampler = resample_logm;
 	else if (!strcmp(argv[2], "optimal"))
 	    resampler = resample_optimal;
-	else
-	    abort();
-    }
-    if (argc > 3) {
-	if (!strcmp(argv[3], "sort"))
-	    sort = 1;
 	else
 	    abort();
     }

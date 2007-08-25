@@ -5,14 +5,14 @@
 # [This program is licensed under the GPL version 2 or GPL version 3 or later.]
 # Please see the file COPYING in the source
 # distribution of this software for license terms.
-for a in optimal naive
+for a in optimal naive logm naivesort logmsort
 do
   t=100
   incr=100
   while [ $t -le 5000 ]
   do
     if [ $t -ge 500 ] ; then incr=500 ; fi
-    (time ./bpf $t $a >$a-$t.dat) 2>$a-$t.time
+    (time ./bpf $t $a >benchtmp/$a-$t.dat) 2>benchtmp/$a-$t.time
     t=`expr $t + $incr`
   done
 done
