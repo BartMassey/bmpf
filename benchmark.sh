@@ -10,6 +10,7 @@ for a in "$@"
 do
   p=10
   incr=10
+  echo $a
   while [ $p -le 150000 ]
   do
     timesfile=benchtmp/$a-$p.time
@@ -25,10 +26,15 @@ do
     echo $p $t >$plotfile
     if nickle -e "if($t > 150) exit(0); else exit(1);;" \
        >/dev/null ; then break ; fi
-    if [ $p -ge 100 ] ; then incr=50 ; fi
-    if [ $p -ge 1000 ] ; then incr=500 ; fi
-    if [ $p -ge 10000 ] ; then incr=5000 ; fi
-    if [ $p -ge 50000 ] ; then incr=25000 ; fi
+    if [ $p -eq 50000 ] ; then
+      incr=25000 ; echo $a $p
+    elif [ $p -eq 10000 ] ; then
+      incr=5000 ; echo $a $p
+    elif [ $p -eq 1000 ] ; then
+      incr=500 ; echo $a $p
+    elif [ $p -eq 100 ] ; then
+      incr=50 ; echo $a $p
+    fi
     p=`expr $p + $incr`
   done
 done
