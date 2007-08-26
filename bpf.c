@@ -133,9 +133,25 @@ static particle_info *weighted_sample(double scale) {
     abort();
 }
 
+inline static int sgn(double x) {
+    if (x < 0)
+	return -1;
+    if (x > 0)
+	return 1;
+    return 0;
+}
+
+static int cmp_weight(const void *w1, const void *w2) {
+    const particle_info *p1 = w1;
+    const particle_info *p2 = w2;
+    return -sgn(p1->weight - p2->weight);
+}
+
 static particle_info *resample_naive(double scale) {
     particle_info *newp = particle_states[!which_particle];
     int i;
+    if (sort)
+	qsort(particle, nparticles, sizeof(particle[0]), cmp_weight);
     for (i = 0; i < nparticles; i++)
         newp[i] = *weighted_sample(scale);
     return newp;
@@ -257,20 +273,6 @@ static particle_info *resample_logm(double scale) {
     return newp;
 }
 
-inline static int sgn(double x) {
-    if (x < 0)
-	return -1;
-    if (x > 0)
-	return 1;
-    return 0;
-}
-
-static int cmp_weight(const void *w1, const void *w2) {
-    const particle_info *p1 = w1;
-    const particle_info *p2 = w2;
-    return -sgn(p1->weight - p2->weight);
-}
-
 static state bpf_step(ccoord *gps, acoord *imu, double dt) {
     int i;
     particle_info *newp;
@@ -286,8 +288,6 @@ static state bpf_step(ccoord *gps, acoord *imu, double dt) {
     /* get normalizing constant */
     double tweight = sum_weights();
     /* resample */
-    if (sort)
-	qsort(particle, nparticles, sizeof(particle[0]), cmp_weight);
     newp = resampler(tweight);
     /* find max weighted */
     state best = particle[argmax_weight()].state;
