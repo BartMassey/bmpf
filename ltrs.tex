@@ -533,9 +533,14 @@
   implementation by switching to this PRNG, and it is now
   far from being the bottleneck.
 
-  The {\tt exp()} bottleneck is harder.  One can always use
-  approximate functions, or change noise distributions
-  altogether.  Work is still underway in this area.
+  The {\tt exp()} bottleneck is harder.  We have recently
+  switched to a fast approximate exponentiation trick due to
+  Schraudolph~\cite{exp}, which improved our performance
+  considerably, but the large number of calls is still
+  painful.  It may be better to just change noise
+  distributions altogether.  Work is still underway in this
+  area.
+
 
   The remaining bottleneck in resampling itself is the cost
   of the $O(n)$ calls to the {\tt pow()} function, each with
@@ -563,7 +568,7 @@
   variate generation that will work fine for large $n$. In
   this regime, our probability expression becomes
   self-similar, and we can very accurately approximate $$
-    (1 - x)^{an} \approx \left(1 - \frac{x}{a}\right)^n
+    (1 - x)^{\frac{1}{an}} \approx \left(1 - \frac{x}{a}\right)^n
   $$
   If this approximation is sufficiently accurate for our
   purpose, it could be used directly to eliminate most
