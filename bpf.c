@@ -17,6 +17,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ziggurat/random.h>
+#include <exp.h>
 
 typedef struct { double x, y; } ccoord;
 typedef struct { double r, t; } acoord;
@@ -87,7 +88,7 @@ static acoord imu_measure(double dt) {
 static double gprob(double delta, double sd) {
     /* return 1.0 - erf(abs(delta) * M_SQRT1_2 / sd); ??? */
     /* return exp(-0.5 * delta * delta / (sd * sd)); ??? */
-    return exp(-delta * delta * sd);
+    return exp_(-delta * delta * sd);
 }
 
 static double gps_prob(state *s, ccoord *gps) {
