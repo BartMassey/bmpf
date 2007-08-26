@@ -1,19 +1,35 @@
 #!/bin/sh
 PGM="`basename $0`"
-USAGE="$PGM: usage: $PGM [-p <n>] [<dir>]"
+USAGE="$PGM: usage: $PGM [-x] [-p <n>] [-f <n> <n>] [<dir>]"
+X=false
 FILTER=false
 DIR=""
 while [ $# -gt 0 ]
 do
   case $1 in
   -p) FILTER=true
-      FILTERVAL="$2"
+      FILTERMIN=0
+      FILTERMAX="$2"
       shift 2
-      if echo "$FILTERVAL" | awk "/^[1-9][0-9]*$/{exit(1);}"
+      if echo "$FILTERMAX" | awk "/^[1-9][0-9]*$/{exit(1);}"
       then
         echo "$USAGE" >&2
 	exit 1
       fi
+      ;;
+  -f) FILTER=true
+      FILTERMIN="$2"
+      FILTERMAX="$3"
+      shift 3
+      if echo "$FILTERMIN" | awk "/^[1-9][0-9]*$/{exit(1);}" ||
+         echo "$FILTERMAX" | awk "/^[1-9][0-9]*$/{exit(1);}"
+      then
+        echo "$USAGE" >&2
+	exit 1
+      fi
+      ;;
+  -x) X=true
+      shift
       ;;
   *)  break
       ;;
@@ -27,9 +43,9 @@ case $# in
      ;;
 esac
 
+$X || echo 'set terminal postscript eps'
 $FILTER && echo "set key left"
 cat <<'EOF'
-set terminal postscript eps
 set ylabel 'time (secs for 1000 steps)'
 set xlabel 'particles'
 set key box
@@ -46,10 +62,10 @@ while read a t
 do
   if $FILTER
   then
-    awk "\$1<=$FILTERVAL{print \$0;}" <"$DIR"/$a.plot
+    awk "\$1>=$FILTERMIN&&\$1<=$FILTERMAX{print \$0;}" <"$DIR"/$a.plot
   else
     cat "$DIR"/$a.plot
   fi
   echo 'e'
 done
-#echo 'pause -1'
+$X && echo 'pause -1'

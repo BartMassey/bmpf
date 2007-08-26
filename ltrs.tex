@@ -27,11 +27,15 @@
   We describe an optimal algorithm for perfect weighted
   resampling of a population, with time complexity $O(m +
   n)$ for resampling $m$ inputs to produce $n$ outputs.
-  This is a substantial performance improvement over
-  typically-used resampling algorithms, and a quality
-  improvement over the approximate linear-time algorithm
-  that represent the state of the art.  Our resampling
-  algorithm is also easily parallelizable, with linear
+  We also describe a perfect algorithm with time complexity
+  $O(n + n \log m)$ which is highly suitable for fixed-point
+  microcontroller implementations, and an extremely fast
+  approximate $O(n + m)$ algorithm whose performance 
+  These algorithms represent a substantial performance improvement over
+  the typically-used resampling algorithm, and a quality
+  improvement over a linear-time approximate algorithm
+  that represents the state of the art.  Our resampling
+  algorithm is also parallelizable, with linear
   speedup.  Linear-time resampling yields substantial
   improvements in our motivating example of Bayesian
   Particle Filtering.
@@ -39,30 +43,58 @@
 
 \section{Introduction}
 
-  Bayesian Particle Filtering (BPF)~\cite{bpf} is an exciting
-  new methodology for state space tracking and sensor
-  fusion.  The bottleneck step in BPF is weighted
+  Bayesian Particle Filtering (BPF)~\cite{bpf} is an
+  exciting new methodology for state space tracking and
+  sensor fusion.  The bottleneck step in BPF is weighted
   resampling: creating a new population of ``particles''
   from an old population by random sampling from the source
   population according to the particle weights.  Consider
   resampling $m$ inputs to produce $n$ outputs.  A standard
-  na\"ive algorithm has time complexity $O(mn)$. Algorithms
-  with complexity $O(m + n \log m)$ are easy to find,
-  although they seem not to be widely used in practice.
-  Instead, typical BPF implementations will resample using
-  the expensive $O(mn)$ algorithm, but only sporadically.  A
-  more promising approach is to use a linear time algorithm,
-  but one that produces a sample that is only approximately
-  correctly weighted~\cite{recount}.
+  na\"ive algorithm has time complexity $O(mn)$.  Typical
+  BPF implementations will resample using this expensive
+  $O(mn)$ algorithm, but only sporadically; this represents
+  a difficult engineering tradeoff between BPF quality and
+  computational cost.
 
-  We introduce an algorithm with time complexity $O(m + n)$
-  (requiring just the normal $O(m + n)$ space) that produces
-  a perfectly weighted sample. For a simple array
-  representation of the output, simply initializing the
-  output will require time $O(n)$.  It seems that the input
-  must be scanned at least once just to determine the total
-  input weight for normalization.  Thus, our algorithm is
-  apparently optimal.
+  An $O(n)$ algorithm by Beadle and Djuric~\cite{recount}
+  produces an output sample that is only approximately
+  correctly weighted.  The basic method is to repeatedly
+  randomly select an input sample, and then replicate it in
+  the output sample the number of times that it would be
+  expected to appear based on its fraction of the total
+  weight.  Note that calculating the total weight requires
+  $O(m)$ time, so the advantage of the $O(n)$ algorithm over
+  an $O(m + n)$ one is essentially lost in practice.  The
+  quality of the approximation is shown to be reasonably
+  good, and it is shown to work well in one BPF application.
+  However, since it is only an approximate method, the
+  results remain suspect.  The authors report a speedup of
+  approximately 20 for 500 particles, but no other details
+  are given about running time.  We suspect that the
+  situation is more complicated, and will probably
+  independently implement and time this approach.
+
+  In this paper we first present an algorithm with
+  complexity $O(m + n \log m)$ based on a binary heap which
+  is straightforward, has good performance, and requires
+  no special math, but seems not to be known in practice.
+  We then introduce a family of perfect and approximate
+  algorithms based on the idea of simulating the scans of
+  the na\"ive algorithm in parallel; making a single pass
+  through the $m$ input samples and selecting output samples
+  using $n$ successive uniform variates.
+
+  We introduce a novel algorithm with time complexity $O(m +
+  n)$ (requiring just the normal $O(m + n)$ space) that
+  produces a perfectly weighted sample.  We modify our exact
+  algorithm to produce an $O(m + n)$ time approximate
+  algorithm with an extremely simple implementation that
+  appears to work well.  For a simple array representation
+  of the output, simply initializing the output will require
+  time $O(n)$.  It seems that the input must be scanned at
+  least once just to determine the total input weight for
+  normalization.  Thus, the running time of our algorithms
+  is apparently optimal.
 
   BPF is typically computation-limited, and all of the other
   steps in a BPF iteration require time linear in the
@@ -70,11 +102,10 @@
   resampling bottleneck, allowing much higher population
   sizes that in turn dramatically improve BPF performance.
 
-  A good starting point for describing our algorithm is to
-  review some resampling algorithms.  We describe our
-  algorithm and report its effectiveness in a BPF
-  implementation.  We conclude with a discussion of
-  remaining issues.
+  In the remainder of this paper we review the na\"ive
+  algorithm, describe our algorithms, and report their
+  effectiveness in a BPF implementation.  We conclude with a
+  discussion of various issues.
 
 \section{Weighted Resampling Algorithms}
 
@@ -82,7 +113,7 @@
   resampling problem.  In this section, we describe some
   weighted resampling algorithms in order of increasing time
   efficiency.  We conclude with the description of our
-  $O(m + n)$ algorithm.
+  $O(m + n)$ algorithms.
 
   For what follows, assume an array $s$ of $m$ input
   samples, and an output array $s'$ that will hold the $n$
@@ -132,12 +163,12 @@
   verify that it is a perfect sampling algorithm.  It is
   easy to implement, and easy to parallelize.  The expected
   running time is $o(\frac{1}{2}mn)$.  If the distribution
-  of weights is uneven enough, the proportionality constant
-  might be improved by paying $O(m \log m)$ time up front to
-  sort the input array so that the largest weights occur
-  first (but this does not seem to work well in practice).
-  Irregardless, resampling is still the bottleneck step in a
-  typical BPF implementation.
+  of weights is uneven enough, as is typical with BPF, the
+  proportionality constant can be improved by paying $O(m
+  \log m)$ time up front to sort the input array so that the
+  largest weights occur first.  Irregardless, na\"ive
+  resampling is still the bottleneck step in a BPF
+  implementation.
 
 \subsection{A Heap-based $O(m + n \log m)$ Resampling Algorithm}\label{sec-heap}
 
@@ -145,13 +176,12 @@
   algorithm is to improve upon the linear scan performed by
   {\em sample} in Figure~\ref{fig-omn}.
 
-  For example, imagine that the input array is treated as a
+  One way to do this is to treat the input sample array as a
   binary heap.  In time $O(m)$ we can compute and cache the
-  sum $w_l$ of weights of the left sub-heap of each position
-  in the input, as shown in Figure~\ref{fig-heap}.  First,
-  the sum at each heap position is computed bottom-up and
-  stored as $w_t$.  This then gives $w_l$ as simply the
-  $w_t$ of the left child.
+  sum $w_l$ of weights of the subtree at each position in
+  the input, as shown in Figure~\ref{fig-heap}.  The sum at
+  each heap position is computed bottom-up and stored as
+  $w_t$.
 
   \begin{figure}
     \centering
@@ -160,23 +190,20 @@
       XX\=XXXX\=XXXX\=XXXX\=\kill
       {\bf to} {\it init-weights}: \\
       \>{\bf for} $i$ {\bf from} $m$ {\bf downto} $1$ {\bf do} \\
-      \>\>{\bf if} $2i > m$ {\bf then} \\
+      \>\>$l \asgn 2i$ \\
+      \>\>$r \asgn 2i + 1$ \\
+      \>\>{\bf if} $l > m$ {\bf then} \\
       \>\>\>$w_t(s_i) \asgn w(s_i)$ \\
-      \>\>{\bf else if} $2i + 1 > m$ {\bf then} \\
-      \>\>\>$w_t(s_i) \asgn w_t(s_{2i}) + w(s_i)$ \\
+      \>\>{\bf else if} $r > m$ {\bf then} \\
+      \>\>\>$w_t(s_i) \asgn w_t(s_l) + w(s_i)$ \\
       \>\>{\bf else}\\
-      \>\>\>$w_t(s_i) \asgn w_t(s_{2i}) + w(s_i) + w_t(s_{2i+1})$ \\
-      \>{\bf for} $i$ {\bf from} $1$ {\bf to} $m$ {\bf do} \\
-      \>\>{\bf if} $2i > m$ {\bf then} \\
-      \>\>\>$w_l(s_i) \asgn 0$ \\
-      \>\>{\bf else} \\
-      \>\>\>$w_l(s_i) \asgn w_t(s_{2i})$
+      \>\>\>$w_t(s_i) \asgn w_t(s_l) + w(s_i) + w_t(s_r)$
     \end{tabbing}
     \end{minipage}
-    \caption{Computing Weights of Left Sub-heaps}\label{fig-heap}
+    \caption{Computing Weights of Sub-heaps}\label{fig-heap}
   \end{figure}
 
-  Given $w_l$, {\em sample} can perform a scan for the
+  Given $w_t$, {\em sample} can perform a scan for the
   correct input weight in time $O(\log m)$ by scanning down
   from the top of the heap, as shown in
   Figure~\ref{fig-onlm}.  At each step, if the target
@@ -184,7 +211,8 @@
   the scan descends left.  If $\mu$ is greater than the
   weight of the left subtree by less than the weight of the
   current node the scan terminates and this node is
-  selected.  Otherwise, the scan descends right.
+  selected.  Otherwise, the scan descends right, with
+  $\mu$ adjusted downward by the cumulate weight.
 
   \begin{figure}
     \centering
@@ -192,11 +220,13 @@
       \begin{tabbing}
       XX\=XXXX\=XXXX\=XXXX\=\kill
       {\bf to} {\it sample}$(\mu,i)$: \\
-      \>{\bf if} $\mu \le w_l(s_i)$ {\bf then} \\
-      \>\>{\bf return} {\it sample}$(\mu,2i)$ \\
-      \>{\bf if} $\mu \le w_l(s_i) + w(s_i)$ {\bf then} \\
+      \>$l \asgn 2i$ \\
+      \>$r \asgn 2i + 1$ \\
+      \>{\bf if} $\mu < w_t(s_l)$ {\bf then} \\
+      \>\>{\bf return} {\it sample}$(\mu, l)$ \\
+      \>{\bf if} $\mu \le w_t(s_l) + w(s_i)$ {\bf then} \\
       \>\>{\bf return} $s_i$ \\
-      \>{\bf return} {\it sample}$(\mu,2i + 1)$
+      \>{\bf return} {\it sample}$(\mu - w_t(s_l) - w(s_i), r)$
     \end{tabbing}
     \end{minipage}
     \caption{Heap-based Sampling}\label{fig-onlm}
@@ -204,18 +234,17 @@
 
   This algorithm is a bit more complex than the na\"ive one,
   but it dramatically improves upon the worst-case running
-  time.  As with the na\"ive algorithm, constant-factor
-  improvements might be possible by actually heapifying the input
-  such that the largest-weighted inputs are near the top.
-  Heapification is also $O(m)$ time and can be done in
-  place, so there is no computational complexity penalty for
-  this optimization.  However, it is an extra step, and the
-  constant factors may not be worth it.
+  time.  As with the na\"ive algorithm, a small
+  constant-factor improvement is possible by actually
+  heapifying the input such that the largest-weighted inputs
+  are near the top.  Heapification is also $O(m)$ time and
+  can be done in place, so there is no computational
+  complexity penalty for this optimization.
 
   For the normal case of resampling, we would like to get
   rid of the $\log m$ penalty per output sample.  However,
   there is a rarely-occuring special case in which this
-  algorithm is quite efficient.  Consider an offline
+  algorithm is especially efficient.  Consider an offline
   sampling problem in which we plan to repeatedly draw a
   small number of samples from the same extremely large
   input distribution.  Because the input distribution
@@ -234,9 +263,9 @@
 
   A better plan is to try to improve the na\"ive algorithm
   in a different way.  The real problem with the na\"ive
-  algorithm is not so much the cost per scan as it is the
+  algorithm is not so much the cost per scan of the input as it is the
   fact that each scan is independent.  It seems a shame not
-  to reuse the work of the initial scan in subsequent scans.
+  to try to do all the work in one scan.
 
   Let us generate an array $u$ of $n$ variates up-front,
   then sort it.  At this point, a {\em merge} operation, as
@@ -318,7 +347,8 @@
     $$i_0=\min_{i\in1..T}\left[{\frac{\sum_{j=1}^{i}{p(j/T)}}
                          {\sum_{j=1}^{T}{p(j/T)}} \ge \mu}\right]$$
   Figure~\ref{fig-calculus} illustrates the calculation
-  here.
+  here.  We output as our weighted variate the
+  x-coordinate $i_0/T$ of the bar containing $\mu$.
 
   \begin{figure}
     \centering
@@ -377,15 +407,37 @@
   section.  We thus have an $O(m + n)$ algorithm for random
   weighted selection.
 
+\subsection{Regular Approximate Resampling}\label{sec-regular}
+
+  There are some obvious drawbacks to the optimal algorithm
+  of the previous section.  Most notably, the version
+  presented there requires one call to a floating-point
+  exponentiation function for each output sample.  This can
+  be quite expensive even on a fast machine; on a
+  microcontroller it may not even be possible.
+
+  For large $m$, a sorted array of uniform deviates looks an
+  awful lot like it was produced by sampling at regular
+  intervals; the spacing between deviates is pretty uniform.
+  This suggests an obvious approximate linear-time
+  algorithm. Shuffle the input samples in time $O(m)$ to
+  reduce bias, then sample the $n$ output samples at
+  uniformly-spaced regular intervals.  While it is not clear
+  that such a resampling algorithm has the same statistical
+  properties as a perfect resampling, it seems to be
+  sufficiently good for our BPF implementation, and to run
+  about as fast as possible.
+
 \section{Performance}
 
-  We implemented the na\"ive and optimal algorithms in a BPS
-  tracker for simulated vehicle navigation.  The
+  We implemented the algorithms described previously in a
+  BPF tracker for simulated vehicle navigation.  The
   simulated vehicle has a GPS-like and an IMU-like device
   for navigational purposes; both the device and the vehicle
   model are noisy.  Figures~\ref{fig-track-naive} and
-  \ref{fig-track-optimal} show actual and estimated vehicle
-  tracks from the simulator for the 100-particle case.  Note
+  \ref{fig-track-optimal} show 1000-step actual and estimated vehicle
+  tracks from the simulator for the 100-particle case, using
+  the na\"ive and optimal algorithms.  Note
   that the quality of tracking of the two algorithms is
   indistinguishable, as expected.
 
@@ -401,16 +453,15 @@
     \caption{Vehicle Tracking---BPF With Optimal Resampling}\label{fig-track-optimal}
   \end{figure}
 
-  The important distinction between these algorithms is not
+  The important distinction between the algorithms we have
+  presented is not
   quality, but rather runtime.
   Figures~\ref{fig-times}-\ref{fig-timeszoom2} show the time
   in seconds for 1000 iterations of BPF with various
   resampling algorithms as a function of the number of
   particles tracked / resampled.  The benchmark machine is
   an otherwise unloaded Intel Core II Duo box at 2.13 GHz
-  with 2GB of memory.  As expected, BPF using the na\"ive
-  algorithm becomes unusable at larger particle sizes,
-  whereas BPF using the optimal algorithm scales linearly.
+  with 2GB of memory.
 
   \begin{figure}
     \centering
@@ -430,20 +481,50 @@
     \caption{Detail of Figure~\ref{fig-timeszoom}}\label{fig-timeszoom2}
   \end{figure}
 
+  As expected, BPF using the na\"ive
+  algorithm becomes unusable at larger particle sizes,
+  whereas BPF using the optimal algorithm scales linearly.
+  The heap-based algorithms are quite competitive with the
+  optimal algorithm even at large particle counts, although
+  the distinction is somewhat masked by the mediocre running
+  time of the rest of the BPF implementation; resampling is
+  not the bottleneck for any of these fast algorithms.  The
+  performance of the regular algorithm illustrates
+  this---the cost of that algorithm is quite close to zero,
+  and thus represents something of a bound on the
+  performance improvement possible through faster resampling.
+
+  Sorting improves the performance of the na\"ive
+  implementation substantially for larger $n$, although it
+  does not pay until the particle count is around 500
+  (Figure~\ref{fig-timeszoom}).  Heapification seems to
+  always be worthwhile for the heap-based algorithm, though
+  only significantly so for more than about 40,000
+  particles.
+
+  Our optimal algorithm is slightly out-performed by the
+  heap-based algorithm until around 20,000 particles, and by
+  the heap-based algorithm with heapification until around
+  40,000 particles.  This, however, is reflective of the
+  large constant factor we hope to eliminate in the optimal
+  algorithm.  Once this is done, the performance of optimal
+  and regular resampling should be very similar.
+
 \section{Discussion}
 
-We have shown an $O(m + n)$ algorithm for perfect
-resampling, and an extremely fast BPF implementation based
-on this algorithm.  However, further speedups are possible.
-In this section, we discuss some of them.
+  We have shown an $O(m + n)$ algorithm for perfect
+  resampling, and an extremely fast BPF implementation based
+  on this algorithm.  However, further speedups are
+  possible.  In this section, we discuss some of them.
 
 \subsection{Constant Factors}
 
   In a typical noise model, there is one call
   to a Gaussian-distributed pseudo-random number generator
   and to the {\tt exp()} function per particle {\em per
-  sensor}: this is how the weights are updated.  This is the
-  current constant-factor bottleneck in the BPF implementation.
+  sensor}: this is how the weights are updated.  These are the
+  constant-factor bottlenecks in a BPF implementation with
+  linear-time or near-linear-time resampling.
 
   The cost of generating Gaussian pseudo-random numbers can
   be reduced to insignificance by using Marsaglia and
@@ -484,13 +565,14 @@ In this section, we discuss some of them.
   self-similar, and we can very accurately approximate $$
     (1 - x)^{an} \approx \left(1 - \frac{x}{a}\right)^n
   $$
-  If this approximation is sufficiently accurate for some
+  If this approximation is sufficiently accurate for our
   purpose, it could be used directly to eliminate most
   of the {\tt pow()} calls by building a Ziggurat PRNG for
   $(1-x)^{n_0}$ for some reasonably large $n_0$---probably
   around 30 or more.  The Ziggurat generator should by its
   nature replace almost all of the {\tt pow()} calls with
-  simple table multiplies and compares.
+  simple table multiplies and compares.  This is the
+  approach we are currently pursuing.
 
   Alternatively, one could build error bounds for the
   approximation, and use these with a rejection method
@@ -559,7 +641,10 @@ In this section, we discuss some of them.
   for $\mu_0$.  A rejection method for direction generation
   of $\mu_0$ would probably be a better approach here---a
   somewhat inefficient method would be fine, since few calls
-  would be made to this generator.
+  would be made to this generator.  Alternatively, one could
+  just give up and divide the range uniformly.  The error of
+  this approximation should be extremely small, and it would
+  avoid a lot of complexity.
   
 \subsection{Paralellization}\label{sec-parallel}
 
@@ -575,20 +660,21 @@ In this section, we discuss some of them.
     particle array.
   \item A master processor uses one of the methods of
     ``skipping ahead'' in the variate
-    sequence described in Section~\ref{sec-segment} to break up the
+    sequence described in the previous section to break up the
     array of variates to be calculated by our $P$-processor
     machine into $P$ regions.
-  \item Each processor indepedently fills in its section
-    of variates in the manner described in Section~\ref{sec-optimal}.
-  \item Each processor does a search for the start and end
+  \item \label{enum-penultimate} Each processor does a search for the start and end
     of its section of the input particle array---the section
     whose total weights contain its variates.  This can be done in time
     $O(\log m)$ using binary search, with an impressively
     small constant factor.
-  \item Finally, each processor samples its section of the array
-    using the {\em merge} algorithm of Section~\ref{sec-merge}.
+  \item Finally, each processor resamples its section of the array
+    using any of the fast algorithms we describe.  The key
+    here is that these algorithms are all completely
+    parallelizable with zero overhead, given the setup of
+    steps~1--\ref{enum-penultimate}.
   \end{enumerate}
-  
+
 
 \section*{Acknowledgments}
 
