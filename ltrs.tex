@@ -680,6 +680,46 @@
     steps~1--\ref{enum-penultimate}.
   \end{enumerate}
 
+\subsection{Recommendations}
+
+  There appear to be three basic regimes that weighted
+  resampling is deployed in.  The choice among the algorithms
+  presented here may be largely guided by the deployment.
+
+  In the ``offline'' environment, extremely fast desktop
+  computers or even supercomputers are being used in
+  resampling.  In this regime, the cost of floating point is
+  low, the desired resampling accuracy is high, millions or
+  billions of input samples may be presented to the
+  resampler, and parallel processing is often a real option.
+  Our perfect optimal algorithm seems like an ideal choice
+  in this domain.  One example of this environment is BPF
+  for biomedical signal procesing, with which we have had
+  some involvement.
+
+  In the ``high performance embedded'' environment, a single
+  reasonable-quality CPU with reasonable four-function
+  floating point is available, the desired resampling
+  accuracy is high, real-time performance is usually
+  required, and thousands to tens of thousands of input
+  samples may be presented to the resampler.  In this
+  regime, our heap-based resampler with heapification seems
+  to be a reasonable choice.  One example of this
+  environment is the BPF sensor fusion on the PPC Linux
+  flight computer aboard our amateur sounding rocket, for
+  which this BPF implementation was originally developed.
+
+  In the ``low-end embedded'' environment, a fairly slow
+  CPU, typically without floating point, is available, the
+  desired resampling accuracy is only moderate, real-time
+  performance is usually required, and hundreds to tens of
+  thousands of input samples may be presented to the
+  resampler.  In this regime, our regular resampler, which
+  can be implemented in a very small amount of very fast
+  fixed-point or integer code, seems to be the best match.
+  One example of this environment is a proprietary real-time
+  BPF sensor fusion application for a portable ARM-7 device
+  that we are currently working on.
 
 \section*{Acknowledgments}
 
