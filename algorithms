@@ -1,0 +1,6 @@
+regular		Regular resampling
+optimal		Optimal resampling
+logm		Heap-based resampling
+logmsort	Heap-based resampling and presort
+naivesort	Naive resampling and presort
+naive		Naive resampling
