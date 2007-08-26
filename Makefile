@@ -15,7 +15,7 @@ EPS = bars.eps track-naive-100.eps track-optimal-100.eps \
 PLOTS = bench/regular.plot bench/optimal.plot bench/logm.plot \
         bench/logmsort.plot bench/naivesort.plot bench/naive.plot
 
-bpf: bpf.c uniform.h erfinv.h gaussian-erfinv.h
+bpf: bpf.c exp.h
 	$(CC) $(CFLAGS) -o bpf bpf.c $(LIBS)
 
 all: bpf ltrs.pdf
