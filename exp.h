@@ -11,8 +11,7 @@
    IEEE 754 floating point */
 
 #include <math.h>
-/* 0 for big endian */
-#define LITTLE_ENDIAN 1
+#include <endian.h>
 
 static inline double exp_(double x) {
     double exp_a = 0x100000 / M_LN2;
@@ -20,7 +19,7 @@ static inline double exp_(double x) {
     double d;
     if (x > 700 || x < -700)
 	return exp(x);
-    ((int *)&d)[LITTLE_ENDIAN] =
+    ((int *)&d)[__LITTLE_ENDIAN==__BYTE_ORDER] =
 	exp_a * x + (0x3ff00000 - exp_c);
     return d;
 }
