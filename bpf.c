@@ -18,8 +18,6 @@
 #include <string.h>
 #include <ziggurat/random.h>
 
-#define DW 1.0e-9
-
 typedef struct { double x, y; } ccoord;
 typedef struct { double r, t; } acoord;
 typedef struct { ccoord posn; acoord vel; } state;
@@ -129,7 +127,9 @@ static particle_info *weighted_sample(double scale) {
 	if (t >= w)
 	    return &particle[i];
     }
+#ifdef DEBUG_NAIVE
     fprintf(stderr, "total %g < target %g\n", t, w);
+#endif
     abort();
 }
 
@@ -199,7 +199,9 @@ static particle_info *resample_regular(double scale) {
 static double *tweight;
 #ifdef DEBUG_LOGM
 static int total_depth;
+#define DW 1.0e9
 #endif
+
 
 static particle_info *logm_weighted_sample(double scale) {
     double w = uniform() * scale;
@@ -213,18 +215,20 @@ static particle_info *logm_weighted_sample(double scale) {
 #ifdef DEBUG_LOGM
 	total_depth++;
 #endif
-	if (w < lweight * (1.0 - DW)) {
+	if (w < lweight) {
 	    i = left;
 	    continue;
 	}
-	if (w <= lweight * (1.0 + DW) + particle[i].weight)
+	if (w <= lweight + particle[i].weight)
 	    return &particle[i];
 	w -= lweight + particle[i].weight;
 	i = right;
     }
     i = (i - 1) / 2;
+#ifdef DEBUG_LOGM
     fprintf(stderr, "fell off tree on %g with i=%d, w[i]=%g\n",
 	    w, i, particle[i].weight);
+#endif
     abort();
 }
 
@@ -240,13 +244,13 @@ static particle_info *resample_logm(double scale) {
 	if (right < nparticles)
 	    tweight[i] += tweight[right];
     }
+#ifdef DEBUG_LOGM
     assert(tweight[0] * (1.0 - DW) <= scale &&
 	   scale <= tweight[0] * (1.0 + DW));
-#ifdef DEBUG_LOGM
     total_depth = 0;
 #endif
     for (i = 0; i < nparticles; i++)
-        newp[i] = *logm_weighted_sample(scale);
+        newp[i] = *logm_weighted_sample(tweight[0]);
 #ifdef DEBUG_LOGM
     fprintf(stderr, "%f\n", total_depth / (double) nparticles);
 #endif
