@@ -402,18 +402,32 @@
   \end{figure}
 
   The important distinction between these algorithms is not
-  quality, but rather runtime.  Figure~\ref{fig-times} shows
-  the time in seconds for the na\"ive and optimal algorithms
-  as a function of the particle size.  The machine is an
-  Intel Core II Duo box at 2.13 GHz with 2GB of memory.  As
-  expected, BPF using the na\"ive algorithm becomes unusable
-  at larger particle sizes, whereas BPF using the optimal
-  algorithm scales linearly.
+  quality, but rather runtime.
+  Figures~\ref{fig-times}-\ref{fig-timeszoom2} show the time
+  in seconds for 1000 iterations of BPF with various
+  resampling algorithms as a function of the number of
+  particles tracked / resampled.  The benchmark machine is
+  an otherwise unloaded Intel Core II Duo box at 2.13 GHz
+  with 2GB of memory.  As expected, BPF using the na\"ive
+  algorithm becomes unusable at larger particle sizes,
+  whereas BPF using the optimal algorithm scales linearly.
 
   \begin{figure}
     \centering
     \includegraphics{times.eps}
     \caption{Runtimes for BPF Implementation}\label{fig-times}
+  \end{figure}
+
+  \begin{figure}
+    \centering
+    \includegraphics{timeszoom.eps}
+    \caption{Detail of Figure~\ref{fig-times}}\label{fig-timeszoom}
+  \end{figure}
+
+  \begin{figure}
+    \centering
+    \includegraphics{timeszoom2.eps}
+    \caption{Detail of Figure~\ref{fig-timeszoom}}\label{fig-timeszoom2}
   \end{figure}
 
 \section{Discussion}

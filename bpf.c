@@ -263,7 +263,7 @@ static void heapify(void) {
 		double wright = particle[right].weight;
 		if (wj >= wleft && wj >= wright)
 		    break;
-		if (wj < wright)
+		if (wj < wright && (wj >= wleft || wright > wleft))
 		    nextj = right;
 	    } else {
 		if (wj >= wleft)
@@ -279,8 +279,13 @@ static void heapify(void) {
 static particle_info *resample_logm(double scale) {
     int i;
     particle_info *newp = particle_states[!which_particle];
-    if (sort)
+    if (sort) {
 	heapify();
+#ifdef DEBUG_HEAPIFY
+	for (i = nparticles - 1; i > 0; --i)
+	    assert (particle[i].weight <= particle[(i - 1) / 2].weight);
+#endif
+    }
     for (i = nparticles - 1; i >= 0; --i) {
 	int left = 2 * i + 1;
 	int right = 2 * i + 2;
