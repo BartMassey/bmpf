@@ -36,10 +36,12 @@ set key box
 set style data linespoints
 plot \
 EOF
+reverse algorithms | 
 while read a t
 do
      echo "'-' title '$t'"
-done <algorithms | sed -e 's/$/, \\/' -e '$s/, \\$//'
+done | sed -e 's/$/, \\/' -e '$s/, \\$//'
+reverse algorithms |
 while read a t
 do
   if $FILTER
@@ -49,5 +51,5 @@ do
     cat "$DIR"/$a.plot
   fi
   echo 'e'
-done <algorithms
+done
 #echo 'pause -1'
