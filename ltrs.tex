@@ -67,12 +67,13 @@
   an $O(m + n)$ one is essentially lost in practice.  The
   quality of the approximation is shown to be reasonably
   good, and it is shown to work well in one BPF application.
-  However, since it is only an approximate method, the
-  results remain suspect.  The authors report a speedup of
-  approximately 20 for 500 particles, but no other details
-  are given about running time.  We suspect that the
-  situation is more complicated, and will probably
-  independently implement and time this approach.
+  However, it is only an approximate method, and one might
+  expect that there are limits to the approximation quality.
+  The authors report a speedup of approximately 20 for 500
+  particles, but no other details are given about running
+  time.  We suspect that the situation is more complicated,
+  and will probably independently implement and time this
+  approach.
 
   In this paper we first present an algorithm with
   complexity $O(m + n \log m)$ based on a binary heap which
