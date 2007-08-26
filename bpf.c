@@ -248,9 +248,39 @@ static particle_info *logm_weighted_sample(double scale) {
     abort();
 }
 
+static void heapify(void) {
+    int i;
+    for (i = nparticles / 2 - 1; i >= 0; --i) {
+	int j = i;
+	while (j < nparticles / 2) {
+	    int left = 2 * j + 1;
+	    int right = 2 * j + 2;
+	    particle_info ptmp = particle[j];
+	    double wj = particle[j].weight;
+	    double wleft = particle[left].weight;
+	    int nextj = left;
+	    if (right < nparticles) {
+		double wright = particle[right].weight;
+		if (wj >= wleft && wj >= wright)
+		    break;
+		if (wj < wright)
+		    nextj = right;
+	    } else {
+		if (wj >= wleft)
+		    break;
+	    }
+	    particle[j] = particle[nextj];
+	    particle[nextj] = ptmp;
+	    j = nextj;
+	}
+    }
+}
+
 static particle_info *resample_logm(double scale) {
     int i;
     particle_info *newp = particle_states[!which_particle];
+    if (sort)
+	heapify();
     for (i = nparticles - 1; i >= 0; --i) {
 	int left = 2 * i + 1;
 	int right = 2 * i + 2;
