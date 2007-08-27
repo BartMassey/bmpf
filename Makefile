@@ -6,7 +6,7 @@
 # source distribution of this software for license terms.
 
 CC = gcc
-#CFLAGS = -g -Wall -O4 -pg
+#CFLAGS = -g -Wall -O4 -pg -fprofile-arcs -ftest-coverage
 #LIBS = -L/local/lib/ziggurat -lrandom_p -lm_p
 CFLAGS = -g -Wall -O4
 LIBS = -L/local/lib/ziggurat -lrandom -lm
