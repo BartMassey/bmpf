@@ -9,9 +9,12 @@
 
 #ifdef DEBUG_LOGM
 static int total_depth;
-#define DW 1.0e9
 #define DEBUG_HEAPIFY
 #endif
+#ifdef DEBUG_HEAPIFY
+#define DW 1.0e9
+#endif
+
 
 static double *tweight;
 
@@ -50,13 +53,14 @@ static particle_info *logm_weighted_sample(double scale) {
 
 static void heapify(void) {
     int i;
-    for (i = nparticles / 2 - 1; i >= 0; --i) {
+    for (i = nparticles - 1; i >= 0; --i) {
 	int left = 2 * i + 1;
 	int right = 2 * i + 2;
 	int j = i;
 	tweight[i] = particle[i].weight;
-	if (left < nparticles)
-	    tweight[i] += tweight[left];
+	if (i >= nparticles / 2)
+	    continue;
+	tweight[i] += tweight[left];
 	if (right < nparticles)
 	    tweight[i] += tweight[right];
 	while (j < nparticles / 2) {
@@ -77,13 +81,13 @@ static void heapify(void) {
 		if (wj >= wleft)
 		    break;
 	    }
-	    dw = particle[j].weight - particle[nextj].weight;
-#ifdef DEBUG_LOGM
-	    assert(dw <= 0);
-#endif
-	    tweight[nextj] += dw;
 	    particle[j] = particle[nextj];
 	    particle[nextj] = ptmp;
+	    dw = particle[j].weight - particle[nextj].weight;
+#ifdef DEBUG_LOGM
+	    assert(dw >= 0);
+#endif
+	    tweight[nextj] -= dw;
 	    j = nextj;
 	}
     }
@@ -113,7 +117,7 @@ void check_tweights(void) {
 	    w += tweight[left];
 	if (right < nparticles)
 	    w += tweight[right];
-	assert(w == tweight[i]);
+	assert(fabs(w - tweight[i]) <= DW);
     }
 }
 #endif
