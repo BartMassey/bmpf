@@ -107,15 +107,13 @@ static double imu_prob(state *s, acoord *imu, double dt) {
 static state bpf_step(ccoord *gps, acoord *imu, double dt) {
     int i;
     particle_info *newp;
-    double tweight;
+    double tweight = 0;
     int best;
     /* update particles */
-    for (i = 0; i < nparticles; i++)
-	update_state(&particle[i].state, dt);
-    /* do probabilistic weighting */
-    tweight = 0;
     for (i = 0; i < nparticles; i++) {
 	double w;
+	update_state(&particle[i].state, dt);
+	/* do probabilistic weighting */
 	double gp = gps_prob(&particle[i].state, gps);
 	double ip = imu_prob(&particle[i].state, imu, dt);
 	w = gp * ip;
