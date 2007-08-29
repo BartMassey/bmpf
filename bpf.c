@@ -24,7 +24,8 @@ typedef struct { double r, t; } acoord;
 typedef struct { ccoord posn; acoord vel; } state;
 typedef struct { state state; double weight; } particle_info;
 
-typedef double resample(double, particle_info *, particle_info *);
+/* XXX returns a highest-weighted particle index */
+typedef int resample(double, particle_info *, particle_info *);
 
 static resample resample_naive, resample_optimal,
        resample_logm, resample_regular;
@@ -103,18 +104,11 @@ static double imu_prob(state *s, acoord *imu, double dt) {
     return pr * pt;
 }
 
-static int argmax_weight(void) {
-    int i = 0, j;
-    for (j = 1; j < nparticles; j++)
-	if (particle[j].weight > particle[i].weight)
-	    i = j;
-    return i;
-}
-
 static state bpf_step(ccoord *gps, acoord *imu, double dt) {
     int i;
     particle_info *newp;
-    double tweight, ntweight;
+    double tweight;
+    int best;
     /* update particles */
     for (i = 0; i < nparticles; i++)
 	update_state(&particle[i].state, dt);
@@ -130,13 +124,11 @@ static state bpf_step(ccoord *gps, acoord *imu, double dt) {
     }
     /* resample */
     newp = particle_states[!which_particle];
-    ntweight = resampler(tweight, particle, newp);
-    /* find max weighted */
-    state best = particle[argmax_weight()].state;
+    best = resampler(tweight, particle, newp);
     /* complete */
     particle = newp;
     which_particle = !which_particle;
-    return best;
+    return particle[best].state;
 }
 
 static void run(void) {

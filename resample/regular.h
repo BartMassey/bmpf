@@ -7,12 +7,13 @@
  * source distribution of this software for license terms.
  */
 
-double resample_regular(double scale,
+int resample_regular(double scale,
 			particle_info *particle,
 			particle_info *newp) {
     int i, j;
     double u0, t = 0;
-    double newscale = 0;
+    double best_w = 0;
+    int best_i = 0;
     if (sort) {
 	/* shuffle */
 	for (i = 0; i < nparticles - 1; i++) {
@@ -36,8 +37,11 @@ double resample_regular(double scale,
 	}
 #endif
 	newp[i] = particle[j];
-	newscale += newp[i].weight;
+        if (newp[i].weight > best_w) {
+	    best_w = newp[i].weight;
+	    best_i = i;
+	}
 	u0 += scale / (nparticles + 1);
     }
-    return newscale;
+    return best_i;
 }

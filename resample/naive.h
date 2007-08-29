@@ -36,16 +36,20 @@ static int cmp_weight(const void *w1, const void *w2) {
     return -sgn(p1->weight - p2->weight);
 }
 
-double resample_naive(double scale,
-	              particle_info *particle,
-		      particle_info *newp) {
+int resample_naive(double scale,
+		   particle_info *particle,
+		   particle_info *newp) {
     int i;
-    double newscale = 0;
+    double best_w = 0;
+    int best_i = 0;
     if (sort)
 	qsort(particle, nparticles, sizeof(particle[0]), cmp_weight);
     for (i = 0; i < nparticles; i++) {
         newp[i] = *weighted_sample(scale);
-        newscale += newp[i].weight;
+        if (newp[i].weight > best_w) {
+	    best_w = newp[i].weight;
+	    best_i = i;
+	}
     }
-    return newscale;
+    return best_i;
 }

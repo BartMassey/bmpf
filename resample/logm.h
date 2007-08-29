@@ -71,11 +71,12 @@ static void heapify(void) {
     }
 }
 
-double resample_logm(double scale,
-		     particle_info *particle,
-		     particle_info *newp) {
+int resample_logm(double scale,
+		  particle_info *particle,
+		  particle_info *newp) {
     int i;
-    double newscale = 0;
+    double best_w = 0;
+    int best_i = 0;
     if (sort) {
 	heapify();
 #ifdef DEBUG_HEAPIFY
@@ -99,11 +100,14 @@ double resample_logm(double scale,
 #endif
     for (i = 0; i < nparticles; i++) {
         newp[i] = *logm_weighted_sample(tweight[0]);
-	newscale += newp[i].weight;
+        if (newp[i].weight > best_w) {
+	    best_w = newp[i].weight;
+	    best_i = i;
+	}
     }
 #ifdef DEBUG_LOGM
     fprintf(stderr, "%f\n", total_depth / (double) nparticles);
 #endif
-    return newscale;
+    return best_i;
 }
 
