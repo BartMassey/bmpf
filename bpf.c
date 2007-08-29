@@ -40,12 +40,28 @@ static resample *resampler = resample_naive;
 static double avar = M_PI / 16;
 static double pvar = 0.1;
 
+#define NDIRNS 256
+typedef struct {
+    double ux;
+    double uy;
+} unit_vector;
+unit_vector dirn[NDIRNS];
+
+void init_dirn(void) {
+    int i;
+    for (i = 0; i < NDIRNS; i++) {
+	double t = i * 2 * M_PI / NDIRNS;
+	dirn[i].ux = cos(t);
+	dirn[i].uy = -sin(t);
+    }
+}
+
 static void update_state(state *p, double dt) {
     double r0 = p->vel.r + gaussian(pvar);
     double t0 = p->vel.t + gaussian(avar);
-    double x0 = p->posn.x + r0 * cos(t0) * dt;
-    double y0 = p->posn.y - r0 * sin(t0) * dt;
-
+    int d0 = (int)(floor(t0 * NDIRNS)) % NDIRNS;
+    double x0 = p->posn.x + r0 * dirn[d0].ux * dt;
+    double y0 = p->posn.y - r0 * dirn[d0].uy * dt;
     p->vel.r = r0;
     p->vel.t = t0;
     p->posn.x = x0;
@@ -179,6 +195,7 @@ int main(int argc, char **argv) {
 	}
     }
     assert(resampler);
+    init_dirn();
     run();
     return 0;
 }
