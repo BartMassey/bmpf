@@ -187,12 +187,14 @@ static particle_info *resample_regular(double scale) {
     int i, j;
     double u0, t = 0;
     particle_info *newp = particle_states[!which_particle];
-    /* shuffle */
-    for (i = 0; i < nparticles - 1; i++) {
-	j = rand32() % (nparticles - i) + i;
-	particle_info ptmp = particle[j];
-	particle[j] = particle[i];
-	particle[i] = ptmp;
+    if (sort) {
+	/* shuffle */
+	for (i = 0; i < nparticles - 1; i++) {
+	    j = rand32() % (nparticles - i) + i;
+	    particle_info ptmp = particle[j];
+	    particle[j] = particle[i];
+	    particle[i] = ptmp;
+	}
     }
     /* merge */
     u0 = scale / (nparticles + 1);
@@ -347,29 +349,38 @@ static void run(void) {
     }
 }
 
+static struct resample_info {
+    char *name;
+    resample* f;
+} resamplers[] = {
+    {"naive", resample_naive},
+    {"logm", resample_logm},
+    {"optimal", resample_optimal},
+    {"regular", resample_regular},
+    {0, 0}
+};
 
 int main(int argc, char **argv) {
+    struct resample_info *entry;
     if (argc > 1)
 	nparticles = atoi(argv[1]);
     if (argc > 2) {
-	if (!strcmp(argv[2], "naivesort")) {
-	    sort = 1;
-	    argv[2] = "naive";
-	} else if (!strcmp(argv[2], "logmsort")) {
-	    sort = 1;
-	    argv[2] = "logm";
+	int na = strlen(argv[2]);
+	int ns = strlen("sort");
+	if (na > ns) {
+	    if(!strcmp(argv[2] + na - ns, "sort")) {
+		sort = 1;
+		argv[2][na - ns] = '\0';
+	    }
 	}
-	if (!strcmp(argv[2], "naive"))
-	    resampler = resample_naive;
-	else if (!strcmp(argv[2], "logm"))
-	    resampler = resample_logm;
-	else if (!strcmp(argv[2], "optimal"))
-	    resampler = resample_optimal;
-	else if (!strcmp(argv[2], "regular"))
-	    resampler = resample_regular;
-	else
-	    abort();
+	for (entry = resamplers; entry->name; entry++) {
+	    if (!strcmp(argv[2], entry->name)) {
+		resampler = entry->f;
+		break;
+	    }
+	}
     }
+    assert(resampler);
     run();
     return 0;
 }
