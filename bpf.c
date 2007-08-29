@@ -24,9 +24,12 @@ typedef struct { double r, t; } acoord;
 typedef struct { ccoord posn; acoord vel; } state;
 typedef struct { state state; double weight; } particle_info;
 
-/* XXX returns a highest-weighted particle index */
+/* returns a highest-weighted particle index */
 typedef int resample(double, particle_info *, particle_info *);
+/* accepts a maximum number of particles input / output */
+typedef void init_resample(int, int);
 
+static init_resample init_resample_logm;
 static resample resample_naive, resample_optimal,
        resample_logm, resample_regular;
 
@@ -165,12 +168,13 @@ static void run(void) {
 
 static struct resample_info {
     char *name;
-    resample* f;
+    init_resample *f_init;
+    resample *f;
 } resamplers[] = {
-    {"naive", resample_naive},
-    {"logm", resample_logm},
-    {"optimal", resample_optimal},
-    {"regular", resample_regular},
+    {"naive", 0, resample_naive},
+    {"logm", init_resample_logm, resample_logm},
+    {"optimal", 0, resample_optimal},
+    {"regular", 0, resample_regular},
     {0, 0}
 };
 
@@ -189,6 +193,8 @@ int main(int argc, char **argv) {
 	}
 	for (entry = resamplers; entry->name; entry++) {
 	    if (!strcmp(argv[2], entry->name)) {
+		if (entry->f_init)
+		    entry->f_init(nparticles, nparticles);
 		resampler = entry->f;
 		break;
 	    }

@@ -7,12 +7,17 @@
  * source distribution of this software for license terms.
  */
 
-static double *tweight;
 #ifdef DEBUG_LOGM
 static int total_depth;
 #define DW 1.0e9
+#define DEBUG_HEAPIFY
 #endif
 
+static double *tweight;
+
+static void init_resample_logm(int mmax, int nmax) {
+    tweight = malloc(mmax * sizeof(tweight[0]));
+}
 
 static particle_info *logm_weighted_sample(double scale) {
     double w = uniform() * scale;
@@ -46,13 +51,21 @@ static particle_info *logm_weighted_sample(double scale) {
 static void heapify(void) {
     int i;
     for (i = nparticles / 2 - 1; i >= 0; --i) {
+	int left = 2 * i + 1;
+	int right = 2 * i + 2;
 	int j = i;
+	tweight[i] = particle[i].weight;
+	if (left < nparticles)
+	    tweight[i] += tweight[left];
+	if (right < nparticles)
+	    tweight[i] += tweight[right];
 	while (j < nparticles / 2) {
 	    int left = 2 * j + 1;
 	    int right = 2 * j + 2;
 	    particle_info ptmp = particle[j];
 	    double wj = particle[j].weight;
 	    double wleft = particle[left].weight;
+	    double dw;
 	    int nextj = left;
 	    if (right < nparticles) {
 		double wright = particle[right].weight;
@@ -64,12 +77,46 @@ static void heapify(void) {
 		if (wj >= wleft)
 		    break;
 	    }
+	    dw = particle[j].weight - particle[nextj].weight;
+#ifdef DEBUG_LOGM
+	    assert(dw <= 0);
+#endif
+	    tweight[nextj] += dw;
 	    particle[j] = particle[nextj];
 	    particle[nextj] = ptmp;
 	    j = nextj;
 	}
     }
 }
+
+void init_tweights(void) {
+    int i;
+    for (i = nparticles - 1; i >= 0; --i) {
+	int left = 2 * i + 1;
+	int right = 2 * i + 2;
+	tweight[i] = particle[i].weight;
+	if (left < nparticles)
+	    tweight[i] += tweight[left];
+	if (right < nparticles)
+	    tweight[i] += tweight[right];
+    }
+}
+
+#ifdef DEBUG_HEAPIFY
+void check_tweights(void) {
+    int i;
+    for (i = nparticles - 1; i >= 0; --i) {
+	int left = 2 * i + 1;
+	int right = 2 * i + 2;
+	double w = particle[i].weight;
+	if (left < nparticles)
+	    w += tweight[left];
+	if (right < nparticles)
+	    w += tweight[right];
+	assert(w == tweight[i]);
+    }
+}
+#endif
 
 int resample_logm(double scale,
 		  particle_info *particle,
@@ -80,18 +127,12 @@ int resample_logm(double scale,
     if (sort) {
 	heapify();
 #ifdef DEBUG_HEAPIFY
+	check_tweights();
 	for (i = nparticles - 1; i > 0; --i)
 	    assert (particle[i].weight <= particle[(i - 1) / 2].weight);
 #endif
-    }
-    for (i = nparticles - 1; i >= 0; --i) {
-	int left = 2 * i + 1;
-	int right = 2 * i + 2;
-	tweight[i] = particle[i].weight;
-	if (left < nparticles)
-	    tweight[i] += tweight[left];
-	if (right < nparticles)
-	    tweight[i] += tweight[right];
+    } else {
+	init_tweights();
     }
 #ifdef DEBUG_LOGM
     assert(tweight[0] * (1.0 - DW) <= scale &&
@@ -105,9 +146,8 @@ int resample_logm(double scale,
 	    best_i = i;
 	}
     }
-#ifdef DEBUG_LOGM
+#ifdef DEBUG_LOGM_SEARCH
     fprintf(stderr, "%f\n", total_depth / (double) nparticles);
 #endif
     return best_i;
 }
-

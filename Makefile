@@ -8,14 +8,16 @@
 CC = gcc
 #CFLAGS = -g -Wall -O4 -pg -fprofile-arcs -ftest-coverage
 #LIBS = -L/local/lib/ziggurat -lrandom_p -lm_p
-CFLAGS = -g -Wall -O4
+CFLAGS = -g -Wall -DDEBUG_LOGM # -O4
 LIBS = -L/local/lib/ziggurat -lrandom -lm
 EPS = bars.eps track-naive-100.eps track-optimal-100.eps \
       times.eps timeszoom.eps timeszoom2.eps
 PLOTS = bench/regular.plot bench/optimal.plot bench/logm.plot \
         bench/logmsort.plot bench/naivesort.plot bench/naive.plot
+RESAMPLERS = resample/logm.h resample/naive.h \
+             resample/optimal.h resample/regular.h
 
-bpf: bpf.c exp.h
+bpf: bpf.c exp.h $(RESAMPLERS)
 	$(CC) $(CFLAGS) -o bpf bpf.c $(LIBS)
 
 all: bpf ltrs.pdf
