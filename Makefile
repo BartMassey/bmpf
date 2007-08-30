@@ -19,7 +19,7 @@ RESAMPLERS = resample/resample.o \
              resample/optimal.o resample/regular.o
 
 bpf: bpf.c exp.h $(RESAMPLERS)
-	$(CC) $(CFLAGS) -o bpf bpf.c $(RESAMPLERS) $(LIBS)
+	$(CC) $(CFLAGS) -Wno-strict-aliasing -o bpf bpf.c $(RESAMPLERS) $(LIBS)
 
 $(RESAMPLERS): bpf.h resample/resample.h
 
