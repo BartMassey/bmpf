@@ -52,5 +52,10 @@ track-optimal-100.eps: plottrack.sh bench/optimal-100.dat
 	sh plottrack.sh bench/optimal-100.dat | \
 	  gnuplot > track-optimal-100.eps
 
+realclean: clean docclean
+
+docclean:
+	-rm -f *.eps ltrs.dvi ltrs.log ltrs.ps 
+
 clean:
-	-rm -f *.eps ltrs.dvi ltrs.log ltrs.ps bpf gmon.out $(RESAMPLERS)
+	-rm -f bpf gmon.out $(RESAMPLERS)
