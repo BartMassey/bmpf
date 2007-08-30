@@ -1,12 +1,12 @@
 #!/bin/sh
 PGM="`basename $0`"
-USAGE="$PGM: usage: $PGM [-x] [-p <n>] [-f <n> <n>] [<dir>]"
+USAGE="$PGM: usage: $PGM [-x] [-p <n>] [-f <n> <n>] [-d <dir>] [<algorithm> ...]"
 TMPDIR=/tmp/plottimes-$$
 #trap "rm -rf $TMPDIR" 0
 mkdir $TMPDIR
 X=false
 FILTER=false
-DIR=""
+DIR="bench"
 while [ $# -gt 0 ]
 do
   case $1 in
@@ -34,17 +34,17 @@ do
   -x) X=true
       shift
       ;;
+  -d) DIR=$2
+      shift 2
+      ;;
+  -*) echo "$USAGE" >&2
+      exit 1
+      ;;
   *)  break
       ;;
   esac
 done
-case $# in
-  0) ;;
-  1) DIR="$1" ;;
-  *) echo "$USAGE" >&2
-     exit 1
-     ;;
-esac
+if [ $# -eq 0 ] ; then set `reverse algorithms | awk '{print $1;}'` ; fi
 
 $X || echo 'set terminal postscript eps'
 $FILTER && echo "set key left"
@@ -67,13 +67,17 @@ EOF
     [ -s $TMPDIR/$p ] || rm -f $TMPDIR/$p
   done
 )
-reverse algorithms | 
-while read a t
+for a in "$@"
 do
-  [ -f $TMPDIR/$a.plot ] && echo "'-' title '$t'"
+  if [ -f $TMPDIR/$a.plot ]
+  then
+    awk "\$1==\"$a\"" algorithms | (
+      read aa t
+      echo "'-' title '$t'"
+    )
+  fi
 done | sed -e 's/$/, \\/' -e '$s/, \\$//'
-reverse algorithms |
-while read a t
+for a in "$@"
 do
   if [ -f $TMPDIR/$a.plot ]
   then
