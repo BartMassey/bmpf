@@ -51,8 +51,8 @@ then
 else
   for a in "$@"
   do
-    if awk "\$1==\"$a\" {exit(1);}
-	    END {exit(0);}" algorithms >/dev/null
+    if awk "\$1==\"$a\" {found = 1;}
+	    END {exit(found);}" algorithms >/dev/null
     then
 	echo "unknown algorithm $a" >&2
 	exit 1
