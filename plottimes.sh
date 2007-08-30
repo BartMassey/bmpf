@@ -1,6 +1,9 @@
 #!/bin/sh
 PGM="`basename $0`"
 USAGE="$PGM: usage: $PGM [-x] [-p <n>] [-f <n> <n>] [<dir>]"
+TMPDIR=/tmp/plottimes-$$
+#trap "rm -rf $TMPDIR" 0
+mkdir $TMPDIR
 X=false
 FILTER=false
 DIR=""
@@ -52,20 +55,30 @@ set key box
 set style data linespoints
 plot \
 EOF
+( cd "$DIR"
+  for p in *.plot
+  do
+    if $FILTER
+    then
+      awk "\$1>=$FILTERMIN&&\$1<=$FILTERMAX{print \$0;}" <$p
+    else
+      cat $p
+    fi > $TMPDIR/$p
+    [ -s $TMPDIR/$p ] || rm -f $TMPDIR/$p
+  done
+)
 reverse algorithms | 
 while read a t
 do
-     echo "'-' title '$t'"
+  [ -f $TMPDIR/$a.plot ] && echo "'-' title '$t'"
 done | sed -e 's/$/, \\/' -e '$s/, \\$//'
 reverse algorithms |
 while read a t
 do
-  if $FILTER
+  if [ -f $TMPDIR/$a.plot ]
   then
-    awk "\$1>=$FILTERMIN&&\$1<=$FILTERMAX{print \$0;}" <"$DIR"/$a.plot
-  else
-    cat "$DIR"/$a.plot
+      cat $TMPDIR/$a.plot
+      echo 'e'
   fi
-  echo 'e'
 done
 $X && echo 'pause -1'

@@ -18,7 +18,7 @@ trap "rm -f $plottmp" 0
 if [ $# -eq 0 ] ; then set `awk '{print $1;}' <algorithms` ; fi
 for a in "$@"
 do
-  p=10
+  p=2000
   incr=$p
   echo $a
   # warm up the caches
@@ -52,10 +52,10 @@ do
       incr=25000 ; echo $a $p
     elif [ $p -eq 10000 ] ; then
       incr=5000 ; echo $a $p
-#    elif [ $p -eq 1000 ] ; then
-#      incr=500 ; echo $a $p
-#    elif [ $p -eq 100 ] ; then
-#      incr=50 ; echo $a $p
+    elif [ $p -eq 1000 ] ; then
+      incr=500 ; echo $a $p
+    elif [ $p -eq 100 ] ; then
+      incr=50 ; echo $a $p
     fi
     p=`expr $p + $incr`
   done
