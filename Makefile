@@ -10,8 +10,9 @@ CC = gcc
 #LIBS = -L/local/lib/ziggurat -lrandom_p -lm_p
 CFLAGS = -g -Wall -O4
 LIBS = -L/local/lib/ziggurat -lrandom -lm
-EPS = bars.eps track-naive-100.eps track-optimal-100.eps \
-      times.eps timeszoom.eps timeszoom2.eps
+TIMESEPS = times.eps timeszoom.eps timeszoom2.eps
+EPS = bars.eps track-naive-100.eps track-optimal-100.eps $(TIMESEPS)
+      
 PLOTS = bench/regular.plot bench/optimal.plot bench/logm.plot \
         bench/logmsort.plot bench/naivesort.plot bench/naive.plot
 RESAMPLERS = resample/resample.o \
@@ -43,6 +44,8 @@ timeszoom.eps: plottimes.sh $(PLOTS)
 
 timeszoom2.eps: plottimes.sh $(PLOTS)
 	sh plottimes.sh -p 100 bench | gnuplot > timeszoom2.eps
+
+times: $(EPSTIMES)
 
 track-naive-100.eps: plottrack.sh bench/naive-100.dat
 	sh plottrack.sh bench/naive-100.dat | \

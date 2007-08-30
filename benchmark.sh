@@ -7,11 +7,11 @@
 # distribution of this software for license terms.
 
 # try at most this many particles
-maxp = 150000
+maxp=100000
 # if a run takes longer than this, stop this algorithm
-maxt=100.0
+maxt=60.0
 # make sure we accumulate at least this much runtime for each trial
-rept=1.0
+rept=0.5
 
 plottmp=/tmp/benchmark.$$
 trap "rm -f $plottmp" 0
@@ -19,7 +19,7 @@ if [ $# -eq 0 ] ; then set `awk '{print $1;}' <algorithms` ; fi
 for a in "$@"
 do
   p=10
-  incr=10
+  incr=$p
   echo $a
   # warm up the caches
   (time ./bpf $p $a >/dev/null) 2>/dev/null
@@ -52,10 +52,10 @@ do
       incr=25000 ; echo $a $p
     elif [ $p -eq 10000 ] ; then
       incr=5000 ; echo $a $p
-    elif [ $p -eq 1000 ] ; then
-      incr=500 ; echo $a $p
-    elif [ $p -eq 100 ] ; then
-      incr=50 ; echo $a $p
+#    elif [ $p -eq 1000 ] ; then
+#      incr=500 ; echo $a $p
+#    elif [ $p -eq 100 ] ; then
+#      incr=50 ; echo $a $p
     fi
     p=`expr $p + $incr`
   done
