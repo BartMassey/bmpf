@@ -11,6 +11,7 @@
 #include "resample.h"
 
 #ifdef DEBUG_LOGM
+#include <stdio.h>
 static int total_depth;
 #define DEBUG_HEAPIFY
 #endif
@@ -61,14 +62,14 @@ static void heapify(int m, particle_info *particle) {
     for (i = m - 1; i >= 0; --i) {
 	int left = 2 * i + 1;
 	int right = 2 * i + 2;
-	int j = i;
 	tweight[i] = particle[i].weight;
 	if (i >= m / 2)
 	    continue;
 	tweight[i] += tweight[left];
 	if (right < m)
 	    tweight[i] += tweight[right];
-	while (j < m / 2) {
+	int j = i;
+	do {
 	    int left = 2 * j + 1;
 	    int right = 2 * j + 2;
 	    particle_info ptmp = particle[j];
@@ -94,7 +95,7 @@ static void heapify(int m, particle_info *particle) {
 #endif
 	    tweight[nextj] -= dw;
 	    j = nextj;
-	}
+	} while (j < m / 2);
     }
 }
 
