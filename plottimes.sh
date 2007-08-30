@@ -44,7 +44,21 @@ do
       ;;
   esac
 done
-if [ $# -eq 0 ] ; then set `reverse algorithms | awk '{print $1;}'` ; fi
+
+if [ $# -eq 0 ]
+then
+  set `reverse algorithms | awk '{print $1;}'`
+else
+  for a in "$@"
+  do
+    if awk "\$1==\"$a\" {exit(1);}
+	    END {exit(0);}" algorithms >/dev/null
+    then
+	echo "unknown algorithm $a" >&2
+	exit 1
+    fi
+  done
+fi
 
 $X || echo 'set terminal postscript eps'
 $FILTER && echo "set key left"
