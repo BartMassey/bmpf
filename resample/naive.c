@@ -7,11 +7,14 @@
  * source distribution of this software for license terms.
  */
 
-static particle_info *weighted_sample(double scale) {
+#include "resample.h"
+
+static particle_info *weighted_sample(double scale, int m,
+				      particle_info *particle) {
     int i;
     double w = uniform() * scale;
     double t = 0;
-    for (i = 0; i < nparticles; i++) {
+    for (i = 0; i < m; i++) {
 	t += particle[i].weight;
 	if (t >= w)
 	    return &particle[i];
@@ -37,15 +40,16 @@ static int cmp_weight(const void *w1, const void *w2) {
 }
 
 int resample_naive(double scale,
-		   particle_info *particle,
-		   particle_info *newp) {
+		   int m, particle_info *particle,
+		   int n, particle_info *newp,
+		   int sort) {
     int i;
     double best_w = 0;
     int best_i = 0;
     if (sort)
-	qsort(particle, nparticles, sizeof(particle[0]), cmp_weight);
-    for (i = 0; i < nparticles; i++) {
-        newp[i] = *weighted_sample(scale);
+	qsort(particle, m, sizeof(particle[0]), cmp_weight);
+    for (i = 0; i < n; i++) {
+        newp[i] = *weighted_sample(scale, m, particle);
         if (newp[i].weight > best_w) {
 	    best_w = newp[i].weight;
 	    best_i = i;

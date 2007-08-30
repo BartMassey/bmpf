@@ -14,11 +14,14 @@ EPS = bars.eps track-naive-100.eps track-optimal-100.eps \
       times.eps timeszoom.eps timeszoom2.eps
 PLOTS = bench/regular.plot bench/optimal.plot bench/logm.plot \
         bench/logmsort.plot bench/naivesort.plot bench/naive.plot
-RESAMPLERS = resample/logm.h resample/naive.h \
-             resample/optimal.h resample/regular.h
+RESAMPLERS = resample/resample.o \
+	     resample/logm.o resample/naive.o \
+             resample/optimal.o resample/regular.o
 
 bpf: bpf.c exp.h $(RESAMPLERS)
-	$(CC) $(CFLAGS) -o bpf bpf.c $(LIBS)
+	$(CC) $(CFLAGS) -o bpf bpf.c $(RESAMPLERS) $(LIBS)
+
+$(RESAMPLERS): bpf.h resample/resample.h
 
 all: bpf ltrs.pdf
 
@@ -50,4 +53,4 @@ track-optimal-100.eps: plottrack.sh bench/optimal-100.dat
 	  gnuplot > track-optimal-100.eps
 
 clean:
-	-rm -f *.eps ltrs.dvi ltrs.log ltrs.ps bpf gmon.out
+	-rm -f *.eps ltrs.dvi ltrs.log ltrs.ps bpf gmon.out $(RESAMPLERS)

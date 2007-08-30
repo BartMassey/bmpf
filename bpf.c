@@ -18,20 +18,8 @@
 #include <string.h>
 #include <ziggurat/random.h>
 #include "exp.h"
-
-typedef struct { double x, y; } ccoord;
-typedef struct { double r, t; } acoord;
-typedef struct { ccoord posn; acoord vel; } state;
-typedef struct { state state; double weight; } particle_info;
-
-/* returns a highest-weighted particle index */
-typedef int resample(double, particle_info *, particle_info *);
-/* accepts a maximum number of particles input / output */
-typedef void init_resample(int, int);
-
-static init_resample init_resample_logm;
-static resample resample_naive, resample_optimal,
-       resample_logm, resample_regular;
+#include "bpf.h"
+#include "resample/resample.h"
 
 static const double nsecs = 100;
 static const double dt = 0.1;
@@ -141,7 +129,7 @@ static state bpf_step(ccoord *gps, acoord *imu, double dt) {
     }
     /* resample */
     newp = particle_states[!which_particle];
-    best = resampler(tweight, particle, newp);
+    best = resampler(tweight, nparticles, particle, nparticles, newp, sort);
     /* complete */
     particle = newp;
     which_particle = !which_particle;
@@ -160,23 +148,6 @@ static void run(void) {
 	printf("%g %g\n", est.posn.x, est.posn.y);
     }
 }
-
-#include "resample/naive.h"
-#include "resample/optimal.h"
-#include "resample/logm.h"
-#include "resample/regular.h"
-
-static struct resample_info {
-    char *name;
-    init_resample *f_init;
-    resample *f;
-} resamplers[] = {
-    {"naive", 0, resample_naive},
-    {"logm", init_resample_logm, resample_logm},
-    {"optimal", 0, resample_optimal},
-    {"regular", 0, resample_regular},
-    {0, 0}
-};
 
 int main(int argc, char **argv) {
     struct resample_info *entry;
