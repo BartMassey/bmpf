@@ -50,7 +50,11 @@ void init_dirn(void) {
 static void update_state(state *p, double dt) {
     double r0 = p->vel.r + gaussian(pvar);
     double t0 = p->vel.t + gaussian(avar);
-    int d0 = (int)(floor(t0 * NDIRNS)) % NDIRNS;
+    while (t0 >= 2 * M_PI)
+	t0 -= 2 * M_PI;
+    while (t0 < 0)
+	t0 += 2 * M_PI;
+    int d0 = (int)(floor(t0 * (NDIRNS / M_PI / 2)));
     double x0 = p->posn.x + r0 * dirn[d0].ux * dt;
     double y0 = p->posn.y - r0 * dirn[d0].uy * dt;
     p->vel.r = r0;
