@@ -100,15 +100,20 @@ static void heapify(int m, particle_info *particle) {
 }
 
 void init_tweights(int m, particle_info *particle) {
-    int i;
-    for (i = m - 1; i >= 0; --i) {
-	int left = 2 * i + 1;
-	int right = 2 * i + 2;
+    int i, left, right;
+    for (i = m - 1; i >= m / 2; --i)
 	tweight[i] = particle[i].weight;
-	if (left < m)
-	    tweight[i] += tweight[left];
-	if (right < m)
-	    tweight[i] += tweight[right];
+    tweight[i] = particle[i].weight;
+    left = 2 * i + 1;
+    right = 2 * i + 2;
+    if (right >= m) {
+	tweight[i] = particle[i].weight + particle[left].weight;
+	--i;
+    }
+    for (; i >= 0; --i) {
+	left = 2 * i + 1;
+	right = 2 * i + 2;
+	tweight[i] = particle[i].weight + tweight[left] + tweight[right];
     }
 }
 
