@@ -1,4 +1,5 @@
 regular		Regular resampling
+regularsort	Regular resampling with shuffle
 optimal		Optimal resampling
 logmsort	Heap-based resampling with heapify
 logm		Heap-based resampling
