@@ -45,7 +45,7 @@ timeszoom.eps: plottimes.sh $(PLOTS)
 timeszoom2.eps: plottimes.sh $(PLOTS)
 	sh plottimes.sh -p 100 bench | gnuplot > timeszoom2.eps
 
-times: $(EPSTIMES)
+times: $(TIMESEPS)
 
 track-naive-100.eps: plottrack.sh bench/naive-100.dat
 	sh plottrack.sh bench/naive-100.dat | \

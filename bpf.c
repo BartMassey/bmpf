@@ -92,7 +92,9 @@ static void update_state(state *s, double dt) {
 #ifndef EXACT_DIRN
     int dc0, dms0;
 #endif
-    while(count < 2) {
+    while(count < 3) {
+	if (count > 1)
+	    t0 = normalize_angle(s->vel.t + M_PI);
 #ifdef EXACT_DIRN
 	x0 = s->posn.x + r0 * cos(t0) * dt;
 	y0 = s->posn.y - r0 * sin(t0) * dt;
@@ -114,7 +116,7 @@ static void update_state(state *s, double dt) {
 	}
 	count++;
     }
-    assert(count < 2);
+    assert(count < 3);
     s->vel.r = r0;
     s->vel.t = t0;
     s->posn.x = x1;
