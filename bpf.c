@@ -51,7 +51,7 @@ void init_dirn(void) {
 }
 
 static inline int angle_dirn(double t) {
-    return (int)(floor(t * NDIRNS)) % NDIRNS;
+    return (int)(floor(t * NDIRNS / (2 * M_PI))) % NDIRNS;
 }
 
 static inline int normalize_dirn(int d) {
