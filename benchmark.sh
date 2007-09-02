@@ -7,7 +7,7 @@
 # distribution of this software for license terms.
 
 # try at most this many particles
-maxp=100000
+maxp=150000
 # if a run takes longer than this, stop this algorithm
 maxt=60.0
 # make sure we accumulate at least this much runtime for each trial
@@ -52,10 +52,10 @@ do
       incr=25000 ; echo $a $p
     elif [ $p -eq 10000 ] ; then
       incr=5000 ; echo $a $p
-#    elif [ $p -eq 1000 ] ; then
-#      incr=500 ; echo $a $p
-#    elif [ $p -eq 100 ] ; then
-#      incr=50 ; echo $a $p
+    elif [ $p -eq 1000 ] ; then
+      incr=500 ; echo $a $p
+    elif [ $p -eq 100 ] ; then
+      incr=50 ; echo $a $p
     fi
     p=`expr $p + $incr`
   done
