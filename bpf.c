@@ -34,6 +34,8 @@ static resample *resampler = resample_naive;
 
 static double avar = M_PI / 32;
 static double pvar = 0.1;
+#define BOX_DIM 20.0
+#define MAX_SPEED 2.0
 
 #ifndef EXACT_DIRN
 
@@ -70,12 +72,20 @@ static double normalize_angle(double t) {
     return t;
 }
 
+static inline double clip(double x, double low, double high) {
+    return fmin(high, fmax(x, low));
+}
+
 static inline double clip_box(double x) {
-    return fmin(10.0, fmax(x, -10.0));
+    return clip(x, -BOX_DIM, BOX_DIM);
+}
+
+static inline double clip_speed(double x) {
+    return clip(x, 0, MAX_SPEED);
 }
 
 static void update_state(state *s, double dt) {
-    double r0 = fmax(s->vel.r + gaussian(pvar), 0);
+    double r0 = clip_speed(s->vel.r + gaussian(pvar));
     double t0 = normalize_angle(s->vel.t + gaussian(avar));
     double x0, y0, x1, y1;
     int count = 0;
@@ -97,15 +107,14 @@ static void update_state(state *s, double dt) {
 	if (x0 == x1 && y0 == y1) {
 	    break;
 	} else {
-	    double t = s->vel.t;
 	    if (x0 != x1)
-		t0 = normalize_angle(M_PI - t);
+		t0 = normalize_angle(M_PI - t0);
 	    else
-		t0 = normalize_angle(2 * M_PI - t);
+		t0 = normalize_angle(2 * M_PI - t0);
 	}
 	count++;
     }
-    assert(count < 10);
+    assert(count < 2);
     s->vel.r = r0;
     s->vel.t = t0;
     s->posn.x = x1;
@@ -170,6 +179,8 @@ static double gps_prob(state *s, ccoord *gps) {
 }
 
 static double imu_prob(state *s, acoord *imu, double dt) {
+    if (s->vel.r != clip_speed(s->vel.r))
+	return 0;
     double pr = gprob(s->vel.r - imu->r, pvar / dt);
     double dth = fmin(fabs(s->vel.t - imu->t),
 		      fabs(fabs(s->vel.t - imu->t) - 2 * M_PI));
