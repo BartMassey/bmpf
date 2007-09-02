@@ -35,6 +35,8 @@ static resample *resampler = resample_naive;
 static double avar = M_PI / 16;
 static double pvar = 0.1;
 
+#ifndef EXACT_DIRN
+
 /* should be divisible by 4, and powers of 2 may
    be more efficient */
 #define NDIRNS 1024
@@ -48,18 +50,6 @@ void init_dirn(void) {
     }
 }
 
-static double normalize_angle(double t) {
-    while (t >= 2 * M_PI)
-	t -= 2 * M_PI;
-    while (t < 0)
-	t += 2 * M_PI;
-    return t;
-}
-
-static inline int opp_dirn(int d) {
-    return (d + NDIRNS / 2) % NDIRNS;
-}
-
 static inline int angle_dirn(double t) {
     return (int)(floor(t * NDIRNS)) % NDIRNS;
 }
@@ -70,6 +60,16 @@ static inline int normalize_dirn(int d) {
     return d % NDIRNS;
 }
 
+#endif
+
+static double normalize_angle(double t) {
+    while (t >= 2 * M_PI)
+	t -= 2 * M_PI;
+    while (t < 0)
+	t += 2 * M_PI;
+    return t;
+}
+
 static inline double clip_box(double x) {
     return fmin(10.0, fmax(x, -10.0));
 }
@@ -77,10 +77,15 @@ static inline double clip_box(double x) {
 static void update_state(state *s, double dt) {
     double r0 = fmax(s->vel.r + gaussian(pvar), 0);
     double t0 = normalize_angle(s->vel.t + gaussian(avar));
+#ifdef EXACT_DIRN
+    double x0 = clip_box(s->posn.x + r0 * cos(t0) * dt);
+    double y0 = clip_box(s->posn.y - r0 * sin(t0) * dt);
+#else
     int d0 = angle_dirn(t0);
     double x0 = clip_box(s->posn.x + r0 * cos_dirn[d0] * dt);
     double y0 = clip_box(s->posn.y + r0 *
 			 cos_dirn[normalize_dirn(d0 + NDIRNS / 4)] * dt);
+#endif
     s->vel.r = r0;
     s->vel.t = t0;
     s->posn.x = x0;
@@ -94,9 +99,9 @@ static int which_particle;
 static particle_info *particle;
 
 static void init_state(state *s) {
-	s->posn.x = clip_box(abs(gaussian(1)));
-	s->posn.y = clip_box(abs(gaussian(1)));
-	s->vel.r = abs(gaussian(1));
+	s->posn.x = clip_box(fabs(gaussian(1.0)));
+	s->posn.y = clip_box(fabs(gaussian(1.0)));
+	s->vel.r = fabs(gaussian(1.0));
 	s->vel.t = normalize_angle(uniform() * M_PI_2);
 }
 
@@ -120,8 +125,8 @@ static ccoord gps_measure(void) {
 
 static acoord imu_measure(double dt) {
     acoord result = vehicle.vel;
-    result.r += gaussian(pvar / dt);
-    result.t = normalize_angle(result.t + gaussian(avar / dt));
+    result.r += gaussian(pvar * dt);
+    result.t = normalize_angle(result.t + gaussian(avar * dt));
     if (result.r < 0) {
 	result.r = - result.r;
 	result.t = normalize_angle(result.t + M_PI);
@@ -130,7 +135,7 @@ static acoord imu_measure(double dt) {
 }
 
 static double gprob(double delta, double sd) {
-    /* return 1.0 - erf(abs(delta) * M_SQRT1_2 / sd); ??? */
+    /* return 1.0 - erf(fabs(delta) * M_SQRT1_2 / sd); ??? */
     /* return exp(-0.5 * delta * delta / (sd * sd)); ??? */
     return exp_(-delta * delta * sd);
 }
@@ -214,7 +219,9 @@ int main(int argc, char **argv) {
 	}
     }
     assert(resampler);
+#ifndef EXACT_DIRN
     init_dirn();
+#endif
     run();
     return 0;
 }
