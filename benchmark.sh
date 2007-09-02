@@ -33,6 +33,11 @@ do
     while nickle -e "if($tt < $rept) exit(0); else exit(1);;"
     do
       (time ./bpf $p $a >$datfile) 2>$timesfile
+      if [ $? -ne 0 ]
+      then
+	  echo "execution failure: see $timesfile for details" >&2
+	  exit 1
+      fi
       t=`awk '$1=="real" {
 	 i = index($2, "m")
 	 m = substr($2, 1, i - 1)
@@ -43,8 +48,17 @@ do
       tt=`nickle -e "$tt + $t"`
     done
     sort -k 1 -n $plottmp | awk '
-      { p=$1; t[++n]=$2; }
-      END { print p, t[int((n + 1) / 2)]; }' >$plotfile
+      {
+        p=$1; t[++n]=$2;
+      }
+      END {
+        m = int((n + 1) / 2);
+	if (n % 2 == 0)
+	  tm = (t[m] + t[m+1]) / 2;
+	else
+	  tm = t[m];
+        print p, tm;
+      }' >$plotfile
     t=`awk '{print $2;}' < $plotfile`
     if nickle -e "if($t > $maxt) exit(0); else exit(1);;" \
        >/dev/null ; then break ; fi
