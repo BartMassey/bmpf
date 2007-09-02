@@ -32,7 +32,7 @@ static int nparticles = 100;
 static int sort = 0;
 static resample *resampler = resample_naive;
 
-static double avar = M_PI / 16;
+static double avar = M_PI / 32;
 static double pvar = 0.1;
 
 #ifndef EXACT_DIRN
@@ -77,19 +77,39 @@ static inline double clip_box(double x) {
 static void update_state(state *s, double dt) {
     double r0 = fmax(s->vel.r + gaussian(pvar), 0);
     double t0 = normalize_angle(s->vel.t + gaussian(avar));
-#ifdef EXACT_DIRN
-    double x0 = clip_box(s->posn.x + r0 * cos(t0) * dt);
-    double y0 = clip_box(s->posn.y - r0 * sin(t0) * dt);
-#else
-    int d0 = angle_dirn(t0);
-    double x0 = clip_box(s->posn.x + r0 * cos_dirn[d0] * dt);
-    double y0 = clip_box(s->posn.y + r0 *
-			 cos_dirn[normalize_dirn(d0 + NDIRNS / 4)] * dt);
+    double x0, y0, x1, y1;
+    int count = 0;
+#ifndef EXACT_DIRN
+    int dc0, dms0;
 #endif
+    while(count < 2) {
+#ifdef EXACT_DIRN
+	x0 = s->posn.x + r0 * cos(t0) * dt;
+	y0 = s->posn.y - r0 * sin(t0) * dt;
+#else
+	dc0 = angle_dirn(t0);
+	dms0 = normalize_dirn(dc0 + NDIRNS / 4);
+	x0 = s->posn.x + r0 * cos_dirn[dc0] * dt;
+	y0 = s->posn.y + r0 * cos_dirn[dms0] * dt;
+#endif
+	x1 = clip_box(x0);
+	y1 = clip_box(y0);
+	if (x0 == x1 && y0 == y1) {
+	    break;
+	} else {
+	    double t = s->vel.t;
+	    if (x0 != x1)
+		t0 = normalize_angle(M_PI - t);
+	    else
+		t0 = normalize_angle(2 * M_PI - t);
+	}
+	count++;
+    }
+    assert(count < 10);
     s->vel.r = r0;
     s->vel.t = t0;
-    s->posn.x = x0;
-    s->posn.y = y0;
+    s->posn.x = x1;
+    s->posn.y = y1;
 }
 
 static state vehicle;
