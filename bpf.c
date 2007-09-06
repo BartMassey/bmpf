@@ -84,43 +84,67 @@ static inline double clip_speed(double x) {
     return clip(x, 0, MAX_SPEED);
 }
 
+enum bounce_problem {
+    BOUNCE_OK,
+    BOUNCE_X,
+    BOUNCE_Y,
+    BOUNCE_XY
+};
+
+static enum bounce_problem bounce(double r, double t, state *s, double dt) {
+    double x0, y0, x1, y1;
+#ifndef EXACT_DIRN
+    int dc0, dms0;
+    dc0 = angle_dirn(t);
+    dms0 = normalize_dirn(dc0 + NDIRNS / 4);
+    x0 = s->posn.x + r * cos_dirn[dc0] * dt;
+    y0 = s->posn.y + r * cos_dirn[dms0] * dt;
+#else
+    x0 = s->posn.x + r * cos(t) * dt;
+    y0 = s->posn.y - r * sin(t) * dt;
+#endif
+    x1 = clip_box(x0);
+    y1 = clip_box(y0);
+    if (x0 == x1 && y0 == y1) {
+	s->posn.x = x1;
+	s->posn.y = y1;
+	s->vel.t = t;
+	s->vel.r = r;
+	return BOUNCE_OK;
+    }
+    if (y0 == y1)
+	return BOUNCE_X;
+    if (x0 == x1)
+	return BOUNCE_Y;
+    return BOUNCE_XY;
+}
+
 static void update_state(state *s, double dt) {
     double r0 = clip_speed(s->vel.r + gaussian(pvar));
     double t0 = normalize_angle(s->vel.t + gaussian(avar));
-    double x0, y0, x1, y1;
-    int count = 0;
-#ifndef EXACT_DIRN
-    int dc0, dms0;
-#endif
-    while(count < 3) {
-	if (count > 1)
-	    t0 = normalize_angle(s->vel.t + M_PI);
-#ifdef EXACT_DIRN
-	x0 = s->posn.x + r0 * cos(t0) * dt;
-	y0 = s->posn.y - r0 * sin(t0) * dt;
-#else
-	dc0 = angle_dirn(t0);
-	dms0 = normalize_dirn(dc0 + NDIRNS / 4);
-	x0 = s->posn.x + r0 * cos_dirn[dc0] * dt;
-	y0 = s->posn.y + r0 * cos_dirn[dms0] * dt;
-#endif
-	x1 = clip_box(x0);
-	y1 = clip_box(y0);
-	if (x0 == x1 && y0 == y1) {
+    enum bounce_problem b = bounce(r0, t0, s, dt);
+    if (b != BOUNCE_OK) {
+	r0 = s->vel.r;
+	t0 = s->vel.t;
+	b = bounce(r0, t0, s, dt);
+	switch (b) {
+	case BOUNCE_X:
+	    t0 = normalize_angle(M_PI - t0);
+	    b = bounce(r0, t0, s, dt);
 	    break;
-	} else {
-	    if (x0 != x1)
-		t0 = normalize_angle(M_PI - t0);
-	    else
-		t0 = normalize_angle(2 * M_PI - t0);
+	case BOUNCE_Y:
+	    t0 = normalize_angle(2 * M_PI - t0);
+	    b = bounce(r0, t0, s, dt);
+	    break;
+	case BOUNCE_XY:
+	    t0 = normalize_angle(M_PI + t0);
+	    b = bounce(r0, t0, s, dt);
+	    break;
+	case BOUNCE_OK:
+	    break;
 	}
-	count++;
     }
-    assert(count < 3);
-    s->vel.r = r0;
-    s->vel.t = t0;
-    s->posn.x = x1;
-    s->posn.y = y1;
+    assert(b == BOUNCE_OK);
 }
 
 static state vehicle;
