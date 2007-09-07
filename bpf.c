@@ -33,7 +33,10 @@ static int sort = 0;
 static resample *resampler = resample_naive;
 
 static double avar = M_PI / 32;
-static double pvar = 0.1;
+static double rvar = 0.1;
+static double gps_var = 2.0;
+static double imu_r_var = 0.5;
+static double imu_a_var = M_PI / 16;
 #define BOX_DIM 20.0
 #define MAX_SPEED 2.0
 
@@ -120,7 +123,7 @@ static enum bounce_problem bounce(double r, double t, state *s, double dt) {
 }
 
 static void update_state(state *s, double dt) {
-    double r0 = clip_speed(s->vel.r + gaussian(pvar));
+    double r0 = clip_speed(s->vel.r + gaussian(rvar));
     double t0 = normalize_angle(s->vel.t + gaussian(avar));
     enum bounce_problem b = bounce(r0, t0, s, dt);
     if (b != BOUNCE_OK) {
@@ -176,15 +179,15 @@ static void init_particles(void) {
 
 static ccoord gps_measure(void) {
     ccoord result = vehicle.posn;
-    result.x += gaussian(pvar);
-    result.y += gaussian(pvar);
+    result.x += gaussian(gps_var);
+    result.y += gaussian(gps_var);
     return result;
 }
 
 static acoord imu_measure(double dt) {
     acoord result = vehicle.vel;
-    result.r += gaussian(pvar * dt);
-    result.t = normalize_angle(result.t + gaussian(avar * dt));
+    result.r += gaussian(imu_r_var * dt);
+    result.t = normalize_angle(result.t + gaussian(imu_a_var * dt));
     if (result.r < 0) {
 	result.r = - result.r;
 	result.t = normalize_angle(result.t + M_PI);
@@ -202,18 +205,18 @@ static double gps_prob(state *s, ccoord *gps) {
     if (s->posn.x != clip_box(s->posn.x) ||
 	s->posn.y != clip_box(s->posn.y))
 	return 0;
-    double px = gprob(s->posn.x - gps->x, pvar);
-    double py = gprob(s->posn.y - gps->y, pvar);
+    double px = gprob(s->posn.x - gps->x, gps_var);
+    double py = gprob(s->posn.y - gps->y, gps_var);
     return px * py;
 }
 
 static double imu_prob(state *s, acoord *imu, double dt) {
     if (s->vel.r != clip_speed(s->vel.r))
 	return 0;
-    double pr = gprob(s->vel.r - imu->r, pvar / dt);
+    double pr = gprob(s->vel.r - imu->r, imu_r_var / dt);
     double dth = fmin(fabs(s->vel.t - imu->t),
 		      fabs(fabs(s->vel.t - imu->t) - 2 * M_PI));
-    double pt = gprob(dth, avar / dt);
+    double pt = gprob(dth, imu_a_var / dt);
     return pr * pt;
 }
 
