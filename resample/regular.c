@@ -13,6 +13,7 @@ int resample_regular(double scale,
 		     int m, particle_info *particle,
 		     int n, particle_info *newp,
 		     int sort) {
+    double invscale = 1.0 / scale;
     int i, j;
     double u0, t = 0;
     double best_w = 0;
@@ -40,6 +41,7 @@ int resample_regular(double scale,
 	}
 #endif
 	newp[i] = particle[j];
+	newp[i].weight *= invscale;
         if (newp[i].weight > best_w) {
 	    best_w = newp[i].weight;
 	    best_i = i;

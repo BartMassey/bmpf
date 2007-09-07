@@ -162,13 +162,16 @@ static void init_state(state *s) {
 
 
 static void init_particles(void) {
+    double invscale = 1.0 / nparticles;
     int i;
     for (i = 0; i < 2; i++)
 	particle_states[i] = malloc(nparticles * sizeof(*particle_states[0]));
     which_particle = 0;
     particle = particle_states[0];
-    for (i = 0; i < nparticles; i++)
+    for (i = 0; i < nparticles; i++) {
 	init_state(&particle[i].state);
+	particle[i].weight = invscale;
+    }
 }
 
 static ccoord gps_measure(void) {
@@ -226,8 +229,8 @@ static state bpf_step(ccoord *gps, acoord *imu, double dt) {
 	/* do probabilistic weighting */
 	double gp = gps_prob(&particle[i].state, gps);
 	double ip = imu_prob(&particle[i].state, imu, dt);
-	w = gp * ip;
-        particle[i].weight = w;
+        w = particle[i].weight * gp * ip;
+	particle[i].weight = w;
 	tweight += w;
     }
     /* resample */

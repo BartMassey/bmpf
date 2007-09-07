@@ -17,6 +17,7 @@ int resample_optimal(double scale,
 		     int m, particle_info *particle,
 		     int n, particle_info *newp,
 		     int sort) {
+    double invscale = 1.0 / scale;
     double u0 = nform(n - 1) * scale;
     int i, j = 0;
     double t = 0;
@@ -33,6 +34,7 @@ int resample_optimal(double scale,
 	}
 #endif
 	newp[i] = particle[j];
+	newp[i].weight *= invscale;
         if (newp[i].weight > best_w) {
 	    best_w = newp[i].weight;
 	    best_i = i;

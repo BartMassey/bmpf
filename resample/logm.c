@@ -136,6 +136,7 @@ void check_tweights(int m, particle_info *particle) {
 int resample_logm(double scale, int m,
 		  particle_info *particle,
 		  int n, particle_info *newp, int sort) {
+    double invscale;
     int i;
     double best_w = 0;
     int best_i = 0;
@@ -154,8 +155,10 @@ int resample_logm(double scale, int m,
 	   scale <= tweight[0] * (1.0 + DW));
     total_depth = 0;
 #endif
+    invscale = 1.0 / tweight[0];
     for (i = 0; i < n; i++) {
         newp[i] = *logm_weighted_sample(m, particle, tweight[0]);
+	newp[i].weight *= invscale;
         if (newp[i].weight > best_w) {
 	    best_w = newp[i].weight;
 	    best_i = i;
