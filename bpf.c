@@ -237,7 +237,11 @@ static state bpf_step(ccoord *gps, acoord *imu, double dt) {
     int i;
     particle_info *newp;
     double tweight = 0;
+    double invtweight;
     int best;
+#ifndef FAST_EST
+    state est_state;
+#endif
     /* update particles */
     for (i = 0; i < nparticles; i++) {
 	double w;
@@ -249,13 +253,32 @@ static state bpf_step(ccoord *gps, acoord *imu, double dt) {
 	particle[i].weight = w;
 	tweight += w;
     }
+#ifndef FAST_EST
+    est_state.posn.x = 0;
+    est_state.posn.y = 0;
+    est_state.vel.r = 0;
+    est_state.vel.t = 0;
+    invtweight = 1.0 / tweight;
+    for (i = 0; i < nparticles; i++) {
+	state *s = &particle[i].state;
+	double w = particle[i].weight * invtweight;
+	est_state.posn.x += w * s->posn.x;
+	est_state.posn.y += w * s->posn.y;
+	est_state.vel.r += w * s->vel.r;
+	est_state.vel.t = normalize_angle(est_state.vel.t + w * s->vel.t);
+    }
+#endif
     /* resample */
     newp = particle_states[!which_particle];
     best = resampler(tweight, nparticles, particle, nparticles, newp, sort);
     /* complete */
     particle = newp;
     which_particle = !which_particle;
+#ifdef FAST_EST    
     return particle[best].state;
+#else
+    return est_state;
+#endif
 }
 
 static void run(void) {
