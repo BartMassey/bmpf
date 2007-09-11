@@ -34,9 +34,9 @@ static resample *resampler = resample_naive;
 
 static double avar = M_PI / 32;
 static double rvar = 0.1;
-static double gps_var = 2.0;
-static double imu_r_var = 0.5;
-static double imu_a_var = M_PI / 16;
+static double gps_var = 10.0;
+static double imu_r_var = 1.0;
+static double imu_a_var = M_PI / 8;
 #define BOX_DIM 20.0
 #define MAX_SPEED 2.0
 
@@ -196,9 +196,9 @@ static acoord imu_measure(double dt) {
 }
 
 static double gprob(double delta, double sd) {
-    /* return 1.0 - erf(fabs(delta) * M_SQRT1_2 / sd); ??? */
+    return 1.0 - erf(fabs(delta) * M_SQRT1_2 / sd); /* ??? */
     /* return exp(-0.5 * delta * delta / (sd * sd)); ??? */
-    return exp_(-delta * delta * sd);
+    /* return exp_(-delta * delta * sd); ??? */
 }
 
 static double gps_prob(state *s, ccoord *gps) {
