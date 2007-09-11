@@ -115,6 +115,19 @@ static enum bounce_problem bounce(double r, double t, state *s, double dt) {
 	s->vel.r = r;
 	return BOUNCE_OK;
     }
+#ifndef EXACT_DIRN
+    x0 = s->posn.x + r * cos(t) * dt;
+    y0 = s->posn.y - r * sin(t) * dt;
+    x1 = clip_box(x0);
+    y1 = clip_box(y0);
+    if (x0 == x1 && y0 == y1) {
+	s->posn.x = x1;
+	s->posn.y = y1;
+	s->vel.t = t;
+	s->vel.r = r;
+	return BOUNCE_OK;
+    }
+#endif    
     if (y0 == y1)
 	return BOUNCE_X;
     if (x0 == x1)
