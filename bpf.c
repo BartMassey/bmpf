@@ -34,8 +34,8 @@ static resample *resampler = resample_naive;
 
 static double avar = M_PI / 32;
 static double rvar = 0.1;
-static double gps_var = 10.0;
-static double imu_r_var = 1.0;
+static double gps_var = 5.0;
+static double imu_r_var = 0.5;
 static double imu_a_var = M_PI / 8;
 #define BOX_DIM 20.0
 #define MAX_SPEED 2.0
@@ -231,8 +231,8 @@ static double imu_prob(state *s, acoord *imu, double dt) {
     return pr * pt;
 }
 
-static state bpf_step(ccoord *gps, acoord *imu,
-		      double t, double dt, int report) {
+void bpf_step(ccoord *gps, acoord *imu,
+	      double t, double dt, int report) {
     int i;
     particle_info *newp;
     double tweight = 0;
@@ -290,10 +290,13 @@ static state bpf_step(ccoord *gps, acoord *imu,
     /* complete */
     particle = newp;
     which_particle = !which_particle;
-#ifdef FAST_EST    
-    return particle[best].state;
-#else
-    return est_state;
+    printf(" %g %g",
+	   particle[best].state.posn.x,
+	   particle[best].state.posn.y);
+#ifndef FAST_EST
+    printf(" %g %g",
+	   est_state.posn.x,
+	   est_state.posn.y);
 #endif
 }
 
@@ -305,11 +308,11 @@ static void run(void) {
 	int msecs = floor(t * 1000 + 0.5);
 	int report = !(msecs % 10000);
 	update_state(&vehicle, dt);
-	printf("%g %g ", vehicle.posn.x, vehicle.posn.y);
+	printf("%g %g", vehicle.posn.x, vehicle.posn.y);
 	ccoord gps = gps_measure();
 	acoord imu = imu_measure(dt);
-	state est = bpf_step(&gps, &imu, t, dt, report);
-	printf("%g %g\n", est.posn.x, est.posn.y);
+	bpf_step(&gps, &imu, t, dt, report);
+	printf("\n");
     }
 }
 

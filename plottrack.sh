@@ -8,5 +8,6 @@
 cat <<EOF
 set terminal postscript eps
 plot "$1" using 1:2 with points title 'actual vehicle track', \
-     "$1" using 3:4 with points title 'estimated vehicle track'
+     "$1" using 3:4 with points title 'min. est. vehicle track', \
+     "$1" using 5:6 with points title 'avg. est. vehicle track'
 EOF
