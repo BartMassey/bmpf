@@ -8,7 +8,7 @@
 CC = gcc
 #CFLAGS = -g -Wall -O4 -pg -fprofile-arcs -ftest-coverage
 #LIBS = -L/local/lib/ziggurat -lrandom_p -lm_p
-CFLAGS = -g -Wall -O4
+CFLAGS = -g -Wall -O4 -DREPORT
 LIBS = -L/local/lib/ziggurat -lrandom -lm
 TIMESEPS = times.eps timeszoom.eps timeszoom2.eps
 EPS = bars.eps track-naive-100.eps track-optimal-100.eps $(TIMESEPS)

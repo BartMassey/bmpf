@@ -231,7 +231,8 @@ static double imu_prob(state *s, acoord *imu, double dt) {
     return pr * pt;
 }
 
-static state bpf_step(ccoord *gps, acoord *imu, double dt) {
+static state bpf_step(ccoord *gps, acoord *imu,
+		      double t, double dt, int report) {
     int i;
     particle_info *newp;
     double tweight = 0;
@@ -266,6 +267,23 @@ static state bpf_step(ccoord *gps, acoord *imu, double dt) {
 	est_state.vel.t = normalize_angle(est_state.vel.t + w * s->vel.t);
     }
 #endif
+#ifdef REPORT
+    if (report) {
+	double vx = vehicle.posn.x;
+	double vy = vehicle.posn.y;
+	FILE *fp;
+	char fn[128];
+	sprintf(fn, "benchtmp/particles-%g.dat", t);
+	fp = fopen(fn, "w");
+	assert(fp);
+	for (i = 0; i < nparticles; i++) {
+	    double px = particle[i].state.posn.x;
+	    double py = particle[i].state.posn.y;
+	    fprintf(fp, "%g %g\n", px - vx, py - vy);
+	}
+	fclose(fp);
+    }
+#endif
     /* resample */
     newp = particle_states[!which_particle];
     best = resampler(tweight, nparticles, particle, nparticles, newp, sort);
@@ -284,11 +302,13 @@ static void run(void) {
     init_particles();
     init_state(&vehicle);
     for(t = 0; t <= nsecs; t += dt) {
+	int msecs = floor(t * 1000 + 0.5);
+	int report = !(msecs % 10000);
 	update_state(&vehicle, dt);
 	printf("%g %g ", vehicle.posn.x, vehicle.posn.y);
 	ccoord gps = gps_measure();
 	acoord imu = imu_measure(dt);
-	state est = bpf_step(&gps, &imu, dt);
+	state est = bpf_step(&gps, &imu, t, dt, report);
 	printf("%g %g\n", est.posn.x, est.posn.y);
     }
 }
