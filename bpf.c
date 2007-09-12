@@ -20,10 +20,23 @@ extern double fmin(double, double);
 extern double fmax(double, double);
 #include <stdlib.h>
 #include <string.h>
+#define _GNU_SOURCE
+#include <getopt.h>
+#undef _GNU_SOURCE
 #include <ziggurat/random.h>
 #include "exp.h"
 #include "bpf.h"
 #include "resample/resample.h"
+
+
+
+int report_particles, best_particle, fast_direction;
+static struct option options[] = {
+    {"report-particles", 0, 0, 'r'},
+    {"best-particle", 0, 0, 'b'},
+    {"fast-direction", 0, 0, 'd'},
+    {0, 0, 0, 0}
+};
 
 static const double nsecs = 100;
 static const double dt = 0.1;
@@ -39,8 +52,6 @@ static double imu_r_var = 0.5;
 static double imu_a_var = M_PI / 8;
 #define BOX_DIM 20.0
 #define MAX_SPEED 2.0
-
-#ifdef FAST_DIRN
 
 /* should be divisible by 4, and powers of 2 may
    be more efficient */
@@ -64,8 +75,6 @@ static inline int normalize_dirn(int d) {
 	d += NDIRNS;
     return d % NDIRNS;
 }
-
-#endif
 
 static double normalize_angle(double t) {
     while (t >= 2 * M_PI)
@@ -96,16 +105,16 @@ enum bounce_problem {
 
 static enum bounce_problem bounce(double r, double t, state *s, double dt) {
     double x0, y0, x1, y1;
-#ifdef FAST_DIRN
     int dc0, dms0;
-    dc0 = angle_dirn(t);
-    dms0 = normalize_dirn(dc0 + NDIRNS / 4);
-    x0 = s->posn.x + r * cos_dirn[dc0] * dt;
-    y0 = s->posn.y + r * cos_dirn[dms0] * dt;
-#else
-    x0 = s->posn.x + r * cos(t) * dt;
-    y0 = s->posn.y - r * sin(t) * dt;
-#endif
+    if (fast_direction) {
+	dc0 = angle_dirn(t);
+	dms0 = normalize_dirn(dc0 + NDIRNS / 4);
+	x0 = s->posn.x + r * cos_dirn[dc0] * dt;
+	y0 = s->posn.y + r * cos_dirn[dms0] * dt;
+    } else {
+	x0 = s->posn.x + r * cos(t) * dt;
+	y0 = s->posn.y - r * sin(t) * dt;
+    }
     x1 = clip_box(x0);
     y1 = clip_box(y0);
     if (x0 == x1 && y0 == y1) {
@@ -115,19 +124,19 @@ static enum bounce_problem bounce(double r, double t, state *s, double dt) {
 	s->vel.r = r;
 	return BOUNCE_OK;
     }
-#ifdef FAST_DIRN
-    x0 = s->posn.x + r * cos(t) * dt;
-    y0 = s->posn.y - r * sin(t) * dt;
-    x1 = clip_box(x0);
-    y1 = clip_box(y0);
-    if (x0 == x1 && y0 == y1) {
-	s->posn.x = x1;
-	s->posn.y = y1;
-	s->vel.t = t;
-	s->vel.r = r;
-	return BOUNCE_OK;
+    if (fast_direction) {
+	x0 = s->posn.x + r * cos(t) * dt;
+	y0 = s->posn.y - r * sin(t) * dt;
+	x1 = clip_box(x0);
+	y1 = clip_box(y0);
+	if (x0 == x1 && y0 == y1) {
+	    s->posn.x = x1;
+	    s->posn.y = y1;
+	    s->vel.t = t;
+	    s->vel.r = r;
+	    return BOUNCE_OK;
+	}
     }
-#endif    
     if (y0 == y1)
 	return BOUNCE_X;
     if (x0 == x1)
@@ -238,9 +247,7 @@ void bpf_step(ccoord *gps, acoord *imu,
     double tweight = 0;
     double invtweight;
     int best;
-#ifndef FAST_EST
     state est_state;
-#endif
     /* update particles */
     for (i = 0; i < nparticles; i++) {
 	double w;
@@ -252,22 +259,21 @@ void bpf_step(ccoord *gps, acoord *imu,
 	particle[i].weight = w;
 	tweight += w;
     }
-#ifndef FAST_EST
     est_state.posn.x = 0;
     est_state.posn.y = 0;
     est_state.vel.r = 0;
     est_state.vel.t = 0;
-    invtweight = 1.0 / tweight;
-    for (i = 0; i < nparticles; i++) {
-	state *s = &particle[i].state;
-	double w = particle[i].weight * invtweight;
-	est_state.posn.x += w * s->posn.x;
-	est_state.posn.y += w * s->posn.y;
-	est_state.vel.r += w * s->vel.r;
-	est_state.vel.t = normalize_angle(est_state.vel.t + w * s->vel.t);
+    if (!best_particle) {
+	invtweight = 1.0 / tweight;
+	for (i = 0; i < nparticles; i++) {
+	    state *s = &particle[i].state;
+	    double w = particle[i].weight * invtweight;
+	    est_state.posn.x += w * s->posn.x;
+	    est_state.posn.y += w * s->posn.y;
+	    est_state.vel.r += w * s->vel.r;
+	    est_state.vel.t = normalize_angle(est_state.vel.t + w * s->vel.t);
+	}
     }
-#endif
-#ifdef REPORT
     if (report) {
 	double vx = vehicle.posn.x;
 	double vy = vehicle.posn.y;
@@ -283,7 +289,6 @@ void bpf_step(ccoord *gps, acoord *imu,
 	}
 	fclose(fp);
     }
-#endif
     /* resample */
     newp = particle_states[!which_particle];
     best = resampler(tweight, nparticles, particle, nparticles, newp, sort);
@@ -293,11 +298,11 @@ void bpf_step(ccoord *gps, acoord *imu,
     printf(" %g %g",
 	   particle[best].state.posn.x,
 	   particle[best].state.posn.y);
-#ifndef FAST_EST
-    printf(" %g %g",
-	   est_state.posn.x,
-	   est_state.posn.y);
-#endif
+    if (!best_particle) {
+	printf(" %g %g",
+	       est_state.posn.x,
+	       est_state.posn.y);
+    }
 }
 
 static void run(void) {
@@ -306,7 +311,7 @@ static void run(void) {
     init_state(&vehicle);
     for(t = 0; t <= nsecs; t += dt) {
 	int msecs = floor(t * 1000 + 0.5);
-	int report = !(msecs % 10000);
+	int report = report_particles && !(msecs % 10000);
 	update_state(&vehicle, dt);
 	printf("%g %g", vehicle.posn.x, vehicle.posn.y);
 	ccoord gps = gps_measure();
@@ -318,19 +323,35 @@ static void run(void) {
 
 int main(int argc, char **argv) {
     struct resample_info *entry;
-    if (argc > 1)
-	nparticles = atoi(argv[1]);
-    if (argc > 2) {
-	int na = strlen(argv[2]);
+    while (1) {
+	int c = getopt_long(argc, argv, "rbc", options, &optind);
+	if (c == -1)
+	    break;
+	switch (c) {
+	case 'r':
+	    report_particles = 1;
+	    break;
+	case 'b':
+	    best_particle = 1;
+	    break;
+	case 'd':
+	    fast_direction = 1;
+	    break;
+	}
+    }
+    if (optind < argc)
+	nparticles = atoi(argv[optind++]);
+    if (optind < argc) {
+	int na = strlen(argv[optind]);
 	int ns = strlen("sort");
 	if (na > ns) {
-	    if(!strcmp(argv[2] + na - ns, "sort")) {
+	    if(!strcmp(argv[optind] + na - ns, "sort")) {
 		sort = 1;
-		argv[2][na - ns] = '\0';
+		argv[optind][na - ns] = '\0';
 	    }
 	}
 	for (entry = resamplers; entry->name; entry++) {
-	    if (!strcmp(argv[2], entry->name)) {
+	    if (!strcmp(argv[optind], entry->name)) {
 		if (entry->f_init)
 		    entry->f_init(nparticles, nparticles);
 		resampler = entry->f;
@@ -339,9 +360,8 @@ int main(int argc, char **argv) {
 	}
     }
     assert(resampler);
-#ifdef FAST_DIRN
-    init_dirn();
-#endif
+    if (fast_direction)
+	init_dirn();
     run();
     return 0;
 }
