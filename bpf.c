@@ -40,7 +40,7 @@ static double imu_a_var = M_PI / 8;
 #define BOX_DIM 20.0
 #define MAX_SPEED 2.0
 
-#ifndef EXACT_DIRN
+#ifdef FAST_DIRN
 
 /* should be divisible by 4, and powers of 2 may
    be more efficient */
@@ -96,7 +96,7 @@ enum bounce_problem {
 
 static enum bounce_problem bounce(double r, double t, state *s, double dt) {
     double x0, y0, x1, y1;
-#ifndef EXACT_DIRN
+#ifdef FAST_DIRN
     int dc0, dms0;
     dc0 = angle_dirn(t);
     dms0 = normalize_dirn(dc0 + NDIRNS / 4);
@@ -115,7 +115,7 @@ static enum bounce_problem bounce(double r, double t, state *s, double dt) {
 	s->vel.r = r;
 	return BOUNCE_OK;
     }
-#ifndef EXACT_DIRN
+#ifdef FAST_DIRN
     x0 = s->posn.x + r * cos(t) * dt;
     y0 = s->posn.y - r * sin(t) * dt;
     x1 = clip_box(x0);
@@ -316,7 +316,7 @@ int main(int argc, char **argv) {
 	}
     }
     assert(resampler);
-#ifndef EXACT_DIRN
+#ifdef FAST_DIRN
     init_dirn();
 #endif
     run();
