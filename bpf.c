@@ -31,10 +31,22 @@ extern double fmax(double, double);
 
 
 int report_particles, best_particle, fast_direction;
+
+static double avar = M_PI / 32;
+static double rvar = 0.1;
+static double gps_var = 5.0;
+static double imu_r_var = 0.5;
+static double imu_a_var = M_PI / 8;
+
 static struct option options[] = {
     {"report-particles", 0, 0, 'r'},
     {"best-particle", 0, 0, 'b'},
     {"fast-direction", 0, 0, 'd'},
+    {"angle-variance", 1, 0, 'A'},
+    {"velocity-variance", 1, 0, 'V'},
+    {"gps-variance", 1, 0, 'G'},
+    {"imu-angle-variance", 1, 0, 'R'},
+    {"imu-velocity-variance", 1, 0, 'T'},
     {0, 0, 0, 0}
 };
 
@@ -45,11 +57,6 @@ static int nparticles = 100;
 static int sort = 0;
 static resample *resampler = resample_naive;
 
-static double avar = M_PI / 32;
-static double rvar = 0.1;
-static double gps_var = 5.0;
-static double imu_r_var = 0.5;
-static double imu_a_var = M_PI / 8;
 #define BOX_DIM 20.0
 #define MAX_SPEED 2.0
 
@@ -337,6 +344,24 @@ int main(int argc, char **argv) {
 	case 'd':
 	    fast_direction = 1;
 	    break;
+	case 'A':
+	    avar = atof(optarg);
+	    break;
+        case 'V':
+	    rvar = atof(optarg);
+	    break;
+	case 'G':
+	    gps_var = atof(optarg);
+	    break;
+	case 'R':
+	    imu_r_var = atof(optarg);
+	    break;
+	case 'T':
+	    imu_a_var = atof(optarg);
+	    break;
+	default:
+	    fprintf(stderr, "bpf: usage error\n");
+	    exit(1);
 	}
     }
     if (optind < argc)
