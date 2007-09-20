@@ -13,7 +13,7 @@
 \newcommand{\hyperg}{{{{}_2}{F_1}}}
 \newcommand{\du}{{\text{d}u}}
 
-\title{Linear Time Weighted Resampling}
+\title{Linear Time Weighted Random Resampling}
 \author{Bart Massey\\
   Assoc. Prof. Computer Science\\
   Portland State University\\
@@ -24,37 +24,62 @@
   \maketitle
 
   \begin{abstract}
-  We describe an optimal algorithm for perfect weighted
-  resampling of a population, with time complexity $O(m +
+  We describe an algorithm for perfect weighted-random
+  resampling of a population with time complexity $O(m +
   n)$ for resampling $m$ inputs to produce $n$ outputs.
-  We also describe a perfect algorithm with time complexity
+  We also describe a potential constant-factor performance improvement to a
+  standard algorithm with time complexity
   $O(n + n \log m)$ which is highly suitable for fixed-point
-  microcontroller implementations, and an extremely fast
-  approximate $O(n + m)$ algorithm whose performance 
-  These algorithms represent a substantial performance improvement over
-  the typically-used resampling algorithm, and a quality
-  improvement over a linear-time approximate algorithm
-  that represents the state of the art.  Our resampling
-  algorithm is also parallelizable, with linear
-  speedup.  Linear-time resampling yields substantial
+  microcontroller implementations, and a potential quality
+  improvement for an $O(m+n)$ approximate algorithm with
+  good constants.
+
+  These algorithms represent minor improvements over
+  standard resampling algorithms.  Our perfect resampling
+  algorithm is also parallelizable, with linear speedup.
+  Linear-time resampling yields notable performance
   improvements in our motivating example of Bayesian
   Particle Filtering.
   \end{abstract}
 
 \section{Introduction}
 
-  Bayesian Particle Filtering (BPF)~\cite{bpf} is an
-  exciting new methodology for state space tracking and
-  sensor fusion.  The bottleneck step in BPF is weighted
-  resampling: creating a new population of ``particles''
-  from an old population by random sampling from the source
-  population according to the particle weights.  Consider
-  resampling $m$ inputs to produce $n$ outputs.  A standard
-  na\"ive algorithm has time complexity $O(mn)$.  Typical
-  BPF implementations will resample using this expensive
-  $O(mn)$ algorithm, but only sporadically; this represents
-  a difficult engineering tradeoff between BPF quality and
-  computational cost.
+  Bayesian Particle Filtering (BPF)~\cite{bpf} is an exciting
+  new methodology for state space tracking and sensor fusion.
+  The bottleneck step in BPF is weighted resampling: creating
+  a new population of ``particles'' from an old population by
+  random sampling from the source population according to the
+  particle weights.  Consider resampling $m$ inputs to produce
+  $n$ outputs.  A standard na\"ive algorithm has time
+  complexity $O(mn)$.  BPF implementations that resample using
+  this expensive $O(mn)$ algorithm can afford to resample only
+  sporadically; this represents a difficult engineering
+  tradeoff between BPF quality and computational cost.
+
+  In this paper we first present an algorithm with
+  complexity $O(m + n \log m)$ based on a binary
+  heap-structured tree which is straightforward, has good
+  performance, and requires no special math.  This is
+  essentially a binary search method, often used in faster
+  BPF implementations~\cite{arulampalam02tutorial}.  However, we introduce a potential
+  performance optimization that takes advantage of the heap
+  property.
+
+  We then introduce a family of perfect and approximate
+  algorithms based on the idea of simulating the scans of
+  the na\"ive algorithm in parallel; making a single pass
+  through the $m$ input samples and selecting $n$ output
+  samples during this pass.  We introduce a novel algorithm
+  with time complexity $O(m + n)$ (requiring just the normal
+  $O(m + n)$ space) that produces a perfectly weighted
+  sample; from this, we derive standard approximate $O(m +
+  n)$ algorithms for regular resampling~\cite{kitagawa} and
+  for a variant of our technique~\cite{carpenter}.  For a simple array representation of the
+  output, simply initializing the output will require time
+  $O(n)$.  It seems that the input must be scanned at least
+  once just to determine the total input weight for
+  normalization.  Thus, the running time of our algorithms
+  is apparently optimal.
 
   An $O(n)$ algorithm by Beadle and Djuric~\cite{recount}
   produces an output sample that is only approximately
@@ -62,58 +87,37 @@
   randomly select an input sample, and then replicate it in
   the output sample the number of times that it would be
   expected to appear based on its fraction of the total
-  weight.  Note that calculating the total weight requires
-  $O(m)$ time, so the advantage of the $O(n)$ algorithm over
-  an $O(m + n)$ one is essentially lost in practice.  The
-  quality of the approximation is shown to be reasonably
-  good, and it is shown to work well in one BPF application.
-  However, it is only an approximate method, and one might
-  expect that there are limits to the approximation quality.
-  The authors report a speedup of approximately 20 for 500
-  particles, but no other details are given about running
-  time.  We suspect that the situation is more complicated,
-  and will probably independently implement and time this
+  weight.  As noted above, calculating the total weight
+  requires $O(m)$ time, so the advantage of the $O(n)$
+  algorithm over an $O(m + n)$ one is essentially lost in
+  practice.  The quality of the approximation is shown to be
+  reasonably good, and it is shown to work well in one BPF
+  application.  However, it is only an approximate method,
+  and one might expect that there are limits to the
+  approximation quality.  The authors report a speedup of
+  approximately 20 for 500 particles, but no other details
+  are given about running time.  We suspect that the
+  situation is more complicated; to investigate further
+  would require independently implementing and timing this
   approach.
-
-  In this paper we first present an algorithm with
-  complexity $O(m + n \log m)$ based on a binary heap which
-  is straightforward, has good performance, and requires
-  no special math, but seems not to be known in practice.
-  We then introduce a family of perfect and approximate
-  algorithms based on the idea of simulating the scans of
-  the na\"ive algorithm in parallel; making a single pass
-  through the $m$ input samples and selecting output samples
-  using $n$ successive uniform variates.
-
-  We introduce a novel algorithm with time complexity $O(m +
-  n)$ (requiring just the normal $O(m + n)$ space) that
-  produces a perfectly weighted sample.  We modify our exact
-  algorithm to produce an $O(m + n)$ time approximate
-  algorithm with an extremely simple implementation that
-  appears to work well.  For a simple array representation
-  of the output, simply initializing the output will require
-  time $O(n)$.  It seems that the input must be scanned at
-  least once just to determine the total input weight for
-  normalization.  Thus, the running time of our algorithms
-  is apparently optimal.
 
   BPF is typically computation-limited, and all of the other
   steps in a BPF iteration require time linear in the
   population size.  By linearizing resampling, we remove the
-  resampling bottleneck, allowing much higher population
+  resampling bottleneck, allowing higher population
   sizes that in turn dramatically improve BPF performance.
 
-  In the remainder of this paper we review the na\"ive
-  algorithm, describe our algorithms, and report their
-  effectiveness in a BPF implementation.  We conclude with a
-  discussion of various issues.
+  In the remainder of this paper we review existing
+  algorithms, describe our algorithms, and report the
+  effectiveness of algorithms in a BPF implementation.  We
+  conclude with a discussion of various issues.
 
 \section{Weighted Resampling Algorithms}
 
   There are a number of approaches to the weighted
   resampling problem.  In this section, we describe some
   weighted resampling algorithms in order of increasing time
-  efficiency.  We conclude with the description of our
+  efficiency.  We conclude with the description of some
   $O(m + n)$ algorithms.
 
   For what follows, assume an array $s$ of $m$ input
@@ -167,9 +171,9 @@
   of weights is uneven enough, as is typical with BPF, the
   proportionality constant can be improved by paying $O(m
   \log m)$ time up front to sort the input array so that the
-  largest weights occur first.  Irregardless, na\"ive
-  resampling is still the bottleneck step in a BPF
-  implementation.
+  largest weights occur first.  Regardless, na\"ive
+  resampling is still the bottleneck step in BPF
+  implementations that employ it.
 
 \subsection{A Heap-based $O(m + n \log m)$ Resampling Algorithm}\label{sec-heap}
 
@@ -235,12 +239,23 @@
 
   This algorithm is a bit more complex than the na\"ive one,
   but it dramatically improves upon the worst-case running
-  time.  As with the na\"ive algorithm, a small
-  constant-factor improvement is possible by actually
-  heapifying the input such that the largest-weighted inputs
-  are near the top.  Heapification is also $O(m)$ time and
-  can be done in place, so there is no computational
-  complexity penalty for this optimization.
+  time.
+
+  As with the na\"ive algorithm, a small constant-factor
+  improvement is possible by actually heapifying the input
+  such that the largest-weighted inputs are near the top.
+  Heapification is also $O(m)$ time and can be done in
+  place, so there is no computational complexity penalty for
+  this optimization.  However, the constant factors must be
+  carefully balanced; our experiments show a small net loss
+  in some situations and net gain in others.  The
+  controlling factor here is the distribution of weights; if
+  a few samples carry most of the sample weight,
+  heapification will pay for itself.  Since the case in BPF where a
+  few samples carry most of the weight tends to be the case where the
+  accuracy of the filter is low, this optimization may be of
+  special benefit in a variable-population BPF technique
+  such as KLD-sampling~\cite{kld}.
 
   For the normal case of resampling, we would like to get
   rid of the $\log m$ penalty per output sample.  However,
@@ -312,21 +327,16 @@
   time, we could get an $O(m + n)$ merge-based algorithm.
   Given that what we are sorting is $n$ variates uniformly
   distributed between $0$ and $1$, a radix sort should do
-  the trick here.  We are currently experimenting with this
-  approach; however, the constant factors in the running
+  the trick here.  However, the constant factors in the running
   time are expected to be poor for large $n$, since the
-  radix sort has extremely poor cache behavior.  In
-  Section~\ref{sec-segment} we suggest a hybrid of the radix
-  sort approach and a variant of the approach of the
-  next section that is expected to largely
-  solve that problem.
+  radix sort has extremely poor cache behavior.
 
 \subsection{An Optimal $O(m + n)$ Resampling Algorithm}\label{sec-optimal}
 
   As discussed in the previous section, if we can generate
   the variates comprising a uniform sample of $n$ values in
   increasing order, we can resample in time $O(m + n)$.  In
-  this section, we show the simple math that achieves this
+  this section, we show an approach that achieves this
   goal.
 
   Assume without loss of generality that our goal is simply
@@ -410,10 +420,10 @@
 
 \subsection{Regular Approximate Resampling}\label{sec-regular}
 
-  There are some obvious drawbacks to the optimal algorithm
-  of the previous section.  Most notably, the version
-  presented there requires one call to a floating-point
-  exponentiation function for each output sample.  This can
+  There are some obvious drawbacks to the optimal algorithm of
+  the previous section.  Most notably, the version presented
+  there requires one call to a floating-point power (general
+  exponentiation) function for each output sample.  This can
   be quite expensive even on a fast machine; on a
   microcontroller it may not even be possible.
 
@@ -421,13 +431,18 @@
   awful lot like it was produced by sampling at regular
   intervals; the spacing between deviates is pretty uniform.
   This suggests an obvious approximate linear-time
-  algorithm. Shuffle the input samples in time $O(m)$ to
-  reduce bias, then sample the $n$ output samples at
-  uniformly-spaced regular intervals.  While it is not clear
-  that such a resampling algorithm has the same statistical
-  properties as a perfect resampling, it seems to be
-  sufficiently good for our BPF implementation, and to run
-  about as fast as possible.
+  algorithm, which turns out to be a well-known approach:
+  sample the $n$ output samples at uniformly-spaced regular
+  intervals.  While it is not clear that such a resampling
+  algorithm has the same statistical properties as a perfect
+  resampling, it seems to be sufficiently good for our BPF
+  implementation, and to run about as fast as possible.
+
+  If one is concerned about the possible selection errors of
+  regular sampling due to correlation, one might choose to
+  shuffle the sample array prior to sampling.  Since the
+  shuffle can be performed in $O(m)$ time, there is no
+  asymptotic penalty.
 
 \section{Performance}
 
@@ -587,25 +602,10 @@
 
 \subsubsection{Segmentation}\label{sec-segment}
 
-  The concentration so far has been on generating the
-  uniform variates sequentially.  However, there are at
-  least two situations in which one would first like to
-  break up the variates into blocks which are treated
-  separately.
-
-  The first such situation is to combine direct generation
-  with the radix sorting approach discussed at the end of
-  Section~\ref{sec-merge}.  Imagine we could generate
-  ``breakpoints'' between blocks of $k$ variates for some
-  small $k$, say 100, in constant time.  We could then
-  generate $k$ variates uniformly and radix sort them in
-  time $O(k)$.  Because the blocks would be small, the radix
-  sort should hit the L0 cache and be fast, yet we would
-  divid the number of {\tt pow()} calls by $k$ over the
-  direct approach of Section~\ref{sec-optimal}.
-
-  The second reason to break the variates up into blocks is
-  for parallelization.  This is discussed further in
+  The concentration so far has been on generating the uniform
+  variates sequentially.  However, for parallelization one
+  would first like to break up the variates into blocks which
+  are treated separately.  This is discussed further in
   Section~\ref{sec-parallel}.
 
   To break the variates up into blocks, we could try to
@@ -693,7 +693,7 @@
   low, the desired resampling accuracy is high, millions or
   billions of input samples may be presented to the
   resampler, and parallel processing is often a real option.
-  Our perfect optimal algorithm seems like an ideal choice
+  The perfect optimal algorithm seems like an ideal choice
   in this domain.  One example of this environment is BPF
   for biomedical signal procesing, with which we have had
   some involvement.
@@ -704,7 +704,7 @@
   accuracy is high, real-time performance is usually
   required, and thousands to tens of thousands of input
   samples may be presented to the resampler.  In this
-  regime, our heap-based resampler with heapification seems
+  regime, a heap-based resampler, with or without heapification, seems
   to be a reasonable choice.  One example of this
   environment is the BPF sensor fusion on the PPC Linux
   flight computer aboard our amateur sounding rocket, for
@@ -715,7 +715,7 @@
   desired resampling accuracy is only moderate, real-time
   performance is usually required, and hundreds to tens of
   thousands of input samples may be presented to the
-  resampler.  In this regime, our regular resampler, which
+  resampler.  In this regime, a regular resampler, which
   can be implemented in a very small amount of very fast
   fixed-point or integer code, seems to be the best match.
   One example of this environment is a proprietary real-time
