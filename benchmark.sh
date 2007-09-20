@@ -9,9 +9,9 @@
 # try at most this many particles
 maxp=150000
 # if a run takes longer than this, stop this algorithm
-maxt=60.0
+maxt=120.0
 # make sure we accumulate at least this much runtime for each trial
-rept=0.5
+rept=1.0
 
 plottmp=/tmp/benchmark.$$
 trap "rm -f $plottmp" 0

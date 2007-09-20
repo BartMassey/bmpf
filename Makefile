@@ -8,7 +8,7 @@
 CC = gcc
 #CFLAGS = -g -Wall -O4 -pg -fprofile-arcs -ftest-coverage
 #LIBS = -L/local/lib/ziggurat -lrandom_p -lm_p
-CFLAGS = -g -Wall -O4
+CFLAGS = -g -Wall -O4 -DREPORT
 LIBS = -L/local/lib/ziggurat -lrandom -lm
 TIMESEPS = times.eps timeszoom.eps timeszoom2.eps
 EPS = bars.eps track-naive-100.eps track-optimal-100.eps $(TIMESEPS)
@@ -37,13 +37,13 @@ bars.eps: plotbars.5c
 	nickle plotbars.5c | gnuplot > bars.eps
 
 times.eps: plottimes.sh $(PLOTS)
-	sh plottimes.sh bench | gnuplot > times.eps
+	sh plottimes.sh | gnuplot > times.eps
 
 timeszoom.eps: plottimes.sh $(PLOTS)
-	sh plottimes.sh -p 700 bench | gnuplot > timeszoom.eps
+	sh plottimes.sh -p 700 | gnuplot > timeszoom.eps
 
 timeszoom2.eps: plottimes.sh $(PLOTS)
-	sh plottimes.sh -p 100 bench | gnuplot > timeszoom2.eps
+	sh plottimes.sh -p 100 | gnuplot > timeszoom2.eps
 
 times: $(TIMESEPS)
 

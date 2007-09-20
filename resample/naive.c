@@ -46,10 +46,12 @@ int resample_naive(double scale,
     int i;
     double best_w = 0;
     int best_i = 0;
+    double invscale = 1.0 / scale;
     if (sort)
 	qsort(particle, m, sizeof(particle[0]), cmp_weight);
     for (i = 0; i < n; i++) {
         newp[i] = *weighted_sample(scale, m, particle);
+	newp[i].weight *= invscale;
         if (newp[i].weight > best_w) {
 	    best_w = newp[i].weight;
 	    best_i = i;

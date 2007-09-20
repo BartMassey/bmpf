@@ -11,6 +11,7 @@
 #include "resample.h"
 
 #ifdef DEBUG_LOGM
+#include <stdio.h>
 static int total_depth;
 #define DEBUG_HEAPIFY
 #endif
@@ -61,14 +62,14 @@ static void heapify(int m, particle_info *particle) {
     for (i = m - 1; i >= 0; --i) {
 	int left = 2 * i + 1;
 	int right = 2 * i + 2;
-	int j = i;
 	tweight[i] = particle[i].weight;
 	if (i >= m / 2)
 	    continue;
 	tweight[i] += tweight[left];
 	if (right < m)
 	    tweight[i] += tweight[right];
-	while (j < m / 2) {
+	int j = i;
+	do {
 	    int left = 2 * j + 1;
 	    int right = 2 * j + 2;
 	    particle_info ptmp = particle[j];
@@ -94,20 +95,25 @@ static void heapify(int m, particle_info *particle) {
 #endif
 	    tweight[nextj] -= dw;
 	    j = nextj;
-	}
+	} while (j < m / 2);
     }
 }
 
 void init_tweights(int m, particle_info *particle) {
-    int i;
-    for (i = m - 1; i >= 0; --i) {
-	int left = 2 * i + 1;
-	int right = 2 * i + 2;
+    int i, left, right;
+    for (i = m - 1; i >= m / 2; --i)
 	tweight[i] = particle[i].weight;
-	if (left < m)
-	    tweight[i] += tweight[left];
-	if (right < m)
-	    tweight[i] += tweight[right];
+    tweight[i] = particle[i].weight;
+    left = 2 * i + 1;
+    right = 2 * i + 2;
+    if (right >= m) {
+	tweight[i] = particle[i].weight + particle[left].weight;
+	--i;
+    }
+    for (; i >= 0; --i) {
+	left = 2 * i + 1;
+	right = 2 * i + 2;
+	tweight[i] = particle[i].weight + tweight[left] + tweight[right];
     }
 }
 
@@ -130,6 +136,7 @@ void check_tweights(int m, particle_info *particle) {
 int resample_logm(double scale, int m,
 		  particle_info *particle,
 		  int n, particle_info *newp, int sort) {
+    double invscale;
     int i;
     double best_w = 0;
     int best_i = 0;
@@ -148,8 +155,10 @@ int resample_logm(double scale, int m,
 	   scale <= tweight[0] * (1.0 + DW));
     total_depth = 0;
 #endif
+    invscale = 1.0 / tweight[0];
     for (i = 0; i < n; i++) {
         newp[i] = *logm_weighted_sample(m, particle, tweight[0]);
+	newp[i].weight *= invscale;
         if (newp[i].weight > best_w) {
 	    best_w = newp[i].weight;
 	    best_i = i;
