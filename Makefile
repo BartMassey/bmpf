@@ -29,9 +29,13 @@ all: bpf ltrs.pdf
 ltrs.pdf: ltrs.dvi
 	dvitopdf ltrs
 
-ltrs.dvi: ltrs.tex $(EPS)
+ltrs.dvi: ltrs.tex ltrs.bbl $(EPS)
 	latex ltrs
 	latex ltrs
+
+ltrs.bbl: ltrs.bib
+	latex ltrs
+	bibtex ltrs
 
 bars.eps: plotbars.5c
 	nickle plotbars.5c | gnuplot > bars.eps
