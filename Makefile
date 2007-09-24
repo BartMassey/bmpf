@@ -11,13 +11,20 @@ CC = gcc
 CFLAGS = -g -Wall -O4 -DREPORT
 LIBS = -L/local/lib/ziggurat -lrandom -lm
 TIMESEPS = times.eps timeszoom.eps timeszoom2.eps
+TIMESPDF = times.pdf timeszoom.pdf timeszoom2.pdf
 EPS = bars.eps track-naive-100.eps track-optimal-100.eps $(TIMESEPS)
+PDF = bars.pdf track-naive-100.pdf track-optimal-100.pdf $(TIMESEPS)
       
 PLOTS = bench/regular.plot bench/optimal.plot bench/logm.plot \
         bench/logmsort.plot bench/naivesort.plot bench/naive.plot
 RESAMPLERS = resample/resample.o \
 	     resample/logm.o resample/naive.o \
              resample/optimal.o resample/regular.o
+
+.SUFFIXES: .eps .pdf
+
+.eps.pdf:
+	epstopdf $*.eps
 
 bpf: bpf.c exp.h $(RESAMPLERS)
 	$(CC) $(CFLAGS) -Wno-strict-aliasing -o bpf bpf.c $(RESAMPLERS) $(LIBS)
@@ -26,8 +33,9 @@ $(RESAMPLERS): bpf.h resample/resample.h
 
 all: bpf ltrs.pdf
 
-ltrs.pdf: ltrs.dvi
-	dvitopdf ltrs
+ltrs.pdf: ltrs.tex ltrs.bbl $(PDF)
+	pdflatex ltrs
+	pdflatex ltrs
 
 ltrs.dvi: ltrs.tex ltrs.bbl $(EPS)
 	latex ltrs
@@ -62,7 +70,7 @@ track-optimal-100.eps: plottrack.sh bench/optimal-100.dat
 realclean: clean docclean
 
 docclean:
-	-rm -f *.eps ltrs.dvi ltrs.log ltrs.ps 
+	-rm -f $(EPS) $(PDF) ltrs.dvi ltrs.log ltrs.ps 
 
 clean:
 	-rm -f bpf gmon.out $(RESAMPLERS)

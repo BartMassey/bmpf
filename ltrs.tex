@@ -18,7 +18,7 @@
   Assoc. Prof. Computer Science\\
   Portland State University\\
   \url{bart@cs.pdx.edu}}
-\date{Draft of 20 September 2007\\{\em Do Not Distribute}}
+\date{Draft of \today\\{\em Do Not Distribute}}
 
 \begin{document}
   \maketitle
@@ -363,7 +363,7 @@
 
   \begin{figure}
     \centering
-    \includegraphics{bars.eps}
+    \includegraphics{bars}
     \caption{Discrete Sampling Approximation}\label{fig-calculus}
   \end{figure}
 
@@ -431,7 +431,7 @@
   awful lot like it was produced by sampling at regular
   intervals; the spacing between deviates is pretty uniform.
   This suggests an obvious approximate linear-time
-  algorithm, which turns out to be a well-known approach~\cite{kitigawa}:
+  algorithm, which turns out to be a well-known approach~\cite{kitagawa}:
   sample the $n$ output samples at uniformly-spaced regular
   intervals.  While it is not clear that such a resampling
   algorithm has the same statistical properties as a perfect
@@ -459,13 +459,13 @@
 
   \begin{figure}
     \centering
-    \includegraphics{track-naive-100.eps}
+    \includegraphics{track-naive-100}
     \caption{Vehicle Tracking---BPF With Na\"ive Resampling}\label{fig-track-naive}
   \end{figure}
 
   \begin{figure}
     \centering
-    \includegraphics{track-optimal-100.eps}
+    \includegraphics{track-optimal-100}
     \caption{Vehicle Tracking---BPF With Optimal Resampling}\label{fig-track-optimal}
   \end{figure}
 
@@ -481,19 +481,19 @@
 
   \begin{figure}
     \centering
-    \includegraphics{times.eps}
+    \includegraphics{times}
     \caption{Runtimes for BPF Implementation}\label{fig-times}
   \end{figure}
 
   \begin{figure}
     \centering
-    \includegraphics{timeszoom.eps}
+    \includegraphics{timeszoom}
     \caption{Detail of Figure~\ref{fig-times}}\label{fig-timeszoom}
   \end{figure}
 
   \begin{figure}
     \centering
-    \includegraphics{timeszoom2.eps}
+    \includegraphics{timeszoom2}
     \caption{Detail of Figure~\ref{fig-timeszoom}}\label{fig-timeszoom2}
   \end{figure}
 
@@ -577,20 +577,22 @@
   previously would be about right, except that the desired
   distribution is a two-argument function.  The most direct
   approach would lead to generating $n$ sets of Ziggurat
-  tables, which would be prohibitively memory expensive for
+  tables, which would be prohibitively memory-expensive for
   large $n$.
 
-  We suspect that there is a generic rejection method for
-  variate generation that will work fine for large $n$. In
-  this regime, our probability expression becomes
-  self-similar, and we can very accurately approximate $$
+  
+  When computing $(1 - x)^n$ for large $n$, however, our
+  probability expression becomes self-similar, and we can
+  accurately approximate the function for larger $n$ using
+  the function with smaller $n$. $$
     (1 - x)^n \approx \left(1 - \frac{x}{a}\right)^{an}
   $$
-  Indeed, this is essentially the compound interest problem,
-  so the limit is well-known: $$
-  \lim_{a \rightarrow \inf}\left(1 - \frac{x}{a}\right)^{an}
-  = e^{-xn}$$.  This leads to a standard approximation for
-  the optimal sampling problem in which the next sample
+  In fact, this is the well-known compound interest problem,
+  yielding an elegant limiting approximation. $$
+  \lim_{a \rightarrow \infty}\left(1 - \frac{x}{a}\right)^{an}
+  =   \lim_{a \rightarrow \infty}\left(1 + \frac{(-x)}{a}\right)^{an}
+  = e^{-xn}$$  This approximation corresponds to a standard 
+  linear-time approximate resampling method in which the next sample
   weight is given by an exponentially-distributed
   variate~\cite{carpenter}.  The approximation works well up until near the
   end of the resampling, and is relatively inexpensive if a
@@ -598,10 +600,10 @@
 
   We can do better, though, by modifying the Ziggurat
   generator to accurately compute the desired power by
-  tweaking the rejection step---this will fail for the last
-  50 samples or so due to the degenerating approximation, at
-  which point one can just switch to calling {\tt pow()}
-  directly.
+  tweaking the rejection step---this will converge poorly
+  for the last 50 samples or so due to the degenerating
+  approximation, at which point we can just switch to
+  calling {\tt pow()} directly.
 
 \subsubsection{Segmentation}\label{sec-segment}
 
