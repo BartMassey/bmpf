@@ -73,8 +73,8 @@
   with time complexity $O(m + n)$ (requiring just the normal
   $O(m + n)$ space) that produces a perfectly weighted
   sample; from this, we derive standard approximate $O(m +
-  n)$ algorithms for regular resampling~\cite{kitagawa} and
-  for a variant of our technique~\cite{carpenter}.  For a simple array representation of the
+  n)$ algorithms for regular resampling and
+  approximate linear-time resampling.  For a simple array representation of the
   output, simply initializing the output will require time
   $O(n)$.  It seems that the input must be scanned at least
   once just to determine the total input weight for
@@ -431,7 +431,7 @@
   awful lot like it was produced by sampling at regular
   intervals; the spacing between deviates is pretty uniform.
   This suggests an obvious approximate linear-time
-  algorithm, which turns out to be a well-known approach:
+  algorithm, which turns out to be a well-known approach~\cite{kitigawa}:
   sample the $n$ output samples at uniformly-spaced regular
   intervals.  While it is not clear that such a resampling
   algorithm has the same statistical properties as a perfect
@@ -571,7 +571,7 @@
 \subsubsection{Direct Generation of Variates}
 
   One way around the {\tt pow()} bottleneck is to generate
-  random variates with distribution $(1 - x)^{n + 1}$ by
+  random variates with distribution $(1 - x)^n$ by
   some less expensive method than that of
   Section~\ref{sec-optimal}.  The Ziggurat method mentioned
   previously would be about right, except that the desired
@@ -584,21 +584,24 @@
   variate generation that will work fine for large $n$. In
   this regime, our probability expression becomes
   self-similar, and we can very accurately approximate $$
-    (1 - x)^{\frac{1}{an}} \approx \left(1 - \frac{x}{a}\right)^n
+    (1 - x)^n \approx \left(1 - \frac{x}{a}\right)^{an}
   $$
-  If this approximation is sufficiently accurate for our
-  purpose, it could be used directly to eliminate most
-  of the {\tt pow()} calls by building a Ziggurat PRNG for
-  $(1-x)^{n_0}$ for some reasonably large $n_0$---probably
-  around 30 or more.  The Ziggurat generator should by its
-  nature replace almost all of the {\tt pow()} calls with
-  simple table multiplies and compares.  This is the
-  approach we are currently pursuing.
+  Indeed, this is essentially the compound interest problem,
+  so the limit is well-known: $$
+  \lim_{a \rightarrow \inf}\left(1 - \frac{x}{a}\right)^{an}
+  = e^{-xn}$$.  This leads to a standard approximation for
+  the optimal sampling problem in which the next sample
+  weight is given by an exponentially-distributed
+  variate~\cite{carpenter}.  The approximation works well up until near the
+  end of the resampling, and is relatively inexpensive if a
+  Ziggurat-style exponential generator is used.
 
-  Alternatively, one could build error bounds for the
-  approximation, and use these with a rejection method
-  generator that also would very occasionally call {\tt
-  pow()} in a corner case.
+  We can do better, though, by modifying the Ziggurat
+  generator to accurately compute the desired power by
+  tweaking the rejection step---this will fail for the last
+  50 samples or so due to the degenerating approximation, at
+  which point one can just switch to calling {\tt pow()}
+  directly.
 
 \subsubsection{Segmentation}\label{sec-segment}
 
