@@ -41,7 +41,7 @@ ltrs.dvi: ltrs.tex ltrs.bbl $(EPS)
 	latex ltrs
 	latex ltrs
 
-ltrs.bbl: ltrs.bib
+ltrs.bbl: ltrs.bib $(EPS)
 	latex ltrs
 	bibtex ltrs
 
@@ -57,7 +57,7 @@ timeszoom.eps: plottimes.sh $(PLOTS)
 timeszoom2.eps: plottimes.sh $(PLOTS)
 	sh plottimes.sh -p 100 | gnuplot > timeszoom2.eps
 
-times: $(TIMESEPS)
+times: $(TIMESPDF)
 
 track-naive-100.eps: plottrack.sh bench/naive-100.dat
 	sh plottrack.sh bench/naive-100.dat | \
@@ -70,7 +70,7 @@ track-optimal-100.eps: plottrack.sh bench/optimal-100.dat
 realclean: clean docclean
 
 docclean:
-	-rm -f $(EPS) $(PDF) ltrs.dvi ltrs.log ltrs.ps 
+	-rm -f $(EPS) $(PDF) ltrs.dvi ltrs.log ltrs.ps ltrs.blg ltrs.aux
 
 clean:
 	-rm -f bpf gmon.out $(RESAMPLERS)
