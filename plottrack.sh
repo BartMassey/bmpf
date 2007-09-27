@@ -12,7 +12,7 @@ then
 fi
 cat <<EOF
 set terminal postscript eps
-plot "$1" using 1:2 $E with points title 'actual vehicle track', \
-     "" using 3:4 $E with points title 'min. est. vehicle track', \
-     "" using 5:6 $E with points title 'avg. est. vehicle track';
+plot '$1' using 1:2 $E with points title 'actual vehicle track', \
+     '' using 3:4 $E with points title 'min. est. vehicle track', \
+     '' using 5:6 $E with points title 'avg. est. vehicle track';
 EOF

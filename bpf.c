@@ -30,8 +30,8 @@ extern double fmax(double, double);
 
 
 
-int report_particles, best_particle, fast_direction;
-
+static int report_particles, best_particle, fast_direction;
+static int resample_interval = 1;
 static double avar = M_PI / 32;
 static double rvar = 0.1;
 static double gps_var = 5.0;
@@ -47,6 +47,7 @@ static struct option options[] = {
     {"gps-variance", 1, 0, 'G'},
     {"imu-angle-variance", 1, 0, 'R'},
     {"imu-velocity-variance", 1, 0, 'T'},
+    {"resample-interval", 1, 0, 's'},
     {0, 0, 0, 0}
 };
 
@@ -255,6 +256,7 @@ void bpf_step(ccoord *gps, acoord *imu,
     double invtweight;
     int best;
     state est_state;
+    static int resample_count = 0;
     /* update particles */
     for (i = 0; i < nparticles; i++) {
 	double w;
@@ -296,12 +298,24 @@ void bpf_step(ccoord *gps, acoord *imu,
 	}
 	fclose(fp);
     }
-    /* resample */
-    newp = particle_states[!which_particle];
-    best = resampler(tweight, nparticles, particle, nparticles, newp, sort);
-    /* complete */
-    particle = newp;
-    which_particle = !which_particle;
+    resample_count = (resample_count + 1) % resample_interval;
+    if (resample_count == 0) {
+	/* resample */
+	newp = particle_states[!which_particle];
+	best = resampler(tweight, nparticles, particle, nparticles, newp, sort);
+	/* complete */
+	particle = newp;
+	which_particle = !which_particle;
+    } else {
+	double best_weight = particle[0].weight;
+	best = 0;
+	for (i = 1; i < nparticles; i++) {
+	    if (particle[i].weight > best_weight) {
+		best = i;
+		best_weight = particle[i].weight;
+	    }
+	}
+    }
     printf(" %g %g",
 	   particle[best].state.posn.x,
 	   particle[best].state.posn.y);
@@ -331,7 +345,7 @@ static void run(void) {
 int main(int argc, char **argv) {
     struct resample_info *entry;
     while (1) {
-	int c = getopt_long(argc, argv, "rbc", options, &optind);
+	int c = getopt_long(argc, argv, "rbds:", options, &optind);
 	if (c == -1)
 	    break;
 	switch (c) {
@@ -358,6 +372,9 @@ int main(int argc, char **argv) {
 	    break;
 	case 'T':
 	    imu_a_var = atof(optarg);
+	    break;
+	case 's':
+	    resample_interval = atoi(optarg);
 	    break;
 	default:
 	    fprintf(stderr, "bpf: usage error\n");
