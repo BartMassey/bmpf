@@ -29,6 +29,9 @@ RESAMPLERS = resample/resample.o \
 bpf: bpf.c exp.h $(RESAMPLERS)
 	$(CC) $(CFLAGS) -Wno-strict-aliasing -o bpf bpf.c $(RESAMPLERS) $(LIBS)
 
+randtest: randtest.c
+	$(CC) $(CFLAGS) -o randtest randtest.c $(LIBS)
+
 $(RESAMPLERS): bpf.h resample/resample.h
 
 all: bpf ltrs.pdf
