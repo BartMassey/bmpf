@@ -7,6 +7,7 @@
 
 int real[NBINS];
 int sim[NBINS];
+int simp[NBINS];
 
 double minrand(int n) {
     int i;
@@ -27,10 +28,13 @@ int main(int argc, char **argv) {
 	real[(int)floor(NBINS * x0)]++;
 	x0 = 1.0 - pow(uniform(), 1.0 / (N + 1));
 	sim[(int)floor(NBINS * x0)]++;
+	x0 = polynomial(N);
+	simp[(int)floor(NBINS * x0)]++;
     }
     for (i = 0; i < NBINS; i++) {
-	printf("%g %d %d\n", i / (double)NBINS, real[i], sim[i]);
-	if (real[i] == 0 && sim[i] == 0)
+	printf("%g %d %d %d\n", i / (double)NBINS,
+	       real[i], sim[i], simp[i]);
+	if (real[i] == 0 && sim[i] == 0 && simp[i] == 0)
 	    break;
     }
     return 0;
