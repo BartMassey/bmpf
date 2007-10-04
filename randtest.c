@@ -3,7 +3,7 @@
 #include <ziggurat/random.h>
 
 #define NBINS 500
-#define N 3
+#define N 50
 
 int real[NBINS];
 int sim[NBINS];
@@ -20,6 +20,9 @@ double minrand(int n) {
     return x;
 }
 
+extern int _rand_polynomial_calls;
+extern int _rand_polynomial_steps;
+
 int main(int argc, char **argv) {
     int i;
     int n = atoi(argv[1]);
@@ -31,6 +34,7 @@ int main(int argc, char **argv) {
 	x0 = polynomial(N);
 	simp[(int)floor(NBINS * x0)]++;
     }
+    printf("%d %d\n", _rand_polynomial_calls, _rand_polynomial_steps);
     for (i = 0; i < NBINS; i++) {
 	printf("%g %d %d %d\n", i / (double)NBINS,
 	       real[i], sim[i], simp[i]);
