@@ -13,6 +13,7 @@
 
 \name{Bart Massey}
 \address{%
+  Associate Professor\\
   Computer Science Department\\
   Portland State University\\
   Portland, Oregon~~USA\\
@@ -25,9 +26,9 @@
   We describe an algorithm for perfect weighted-random
   resampling of a population with time complexity $O(m +
   n)$ for resampling $m$ inputs to produce $n$ outputs.
-  This algorithm is an incremental improvements over
+  This algorithm is an incremental improvement over
   standard resampling algorithms.  Our resampling
-  algorithm is also parallelizable, with linear speedup.
+  algorithm is parallelizable, with linear speedup.
   Linear-time resampling yields notable performance
   improvements in our motivating example of Sequential
   Importance Resampling for Bayesian
@@ -138,16 +139,11 @@ Monte Carlo methods, state estimation, filtering, tracking filters
     \caption{Na\"ive Resampling}\label{fig:omn}
   \end{figure}
 
-  The na\"ive algorithm has its advantages.  It is easy to
-  verify that it is a perfect sampling algorithm.  It is
-  easy to implement, and easy to parallelize.  The expected
-  running time is $o(\frac{1}{2}mn)$.  If the distribution
-  of weights is uneven enough, as is typical with BPF, the
-  proportionality constant can be improved by paying $O(m
-  \log m)$ time up front to sort the input array so that the
-  largest weights occur first.  Regardless, na\"ive
-  resampling is still the bottleneck step in BPF
-  implementations that employ it.
+  Despite its poor performance, the na\"ive algorithm has
+  its advantages.  It is easy to verify that it is a perfect
+  sampling algorithm.  It is easy to implement, and easy to
+  parallelize.  The expected running time is
+  $o(\frac{1}{2}mn)$.
 
   To derive a $O(m + n \log m)$ algorithm from the na\"ive
   algorithm, note that the linear scan of input samples in
@@ -298,7 +294,7 @@ Monte Carlo methods, state estimation, filtering, tracking filters
   One possible way around the {\tt pow()} bottleneck is to generate
   random variates with distribution $(1 - x)^n$ by
   Marsaglia and
-  Tsang's ``Ziggurat Method'' PRNG~\cite{ziggurat}.
+  Tsang's ``Ziggurat Method'' PRNG~\cite{ziggurat,ziggurat-fixes}.
   Unfortunately, the desired
   distribution is bivariate.  The most direct
   approach would lead to generating $n$ sets of Ziggurat
@@ -331,6 +327,17 @@ Monte Carlo methods, state estimation, filtering, tracking filters
   has performance close to that of regular resampling, but
   with the perfect resampling of the na\"ive method.
 
+  A parallel version of our perfect algorithm is
+  straightforward to achieve. Although space precludes a
+  detailed description, the basic idea is as follows.  Given
+  $p$ processors, each processor generates a variate $v_i$ from the
+  distribution $x^i(1-x)^{p-i}$, then binary searches for
+  the sample breakpoint corresponding to that variate.  Then
+  the processor generates $n/p$ samples in the range
+  $v_{i-1}\ldots v_i$ using the perfect resampling
+  algorithm.  This achieves a linear speedup while retaining
+  statistically correct resampling.
+
 \section{Evaluation}
 
   We implemented the algorithms described previously in a
@@ -348,12 +355,12 @@ Monte Carlo methods, state estimation, filtering, tracking filters
     \begin{minipage}{0.45\linewidth}
     \centering
     \includegraphics[width=0.95\linewidth]{track-naive-100}
-    \begin{center}(a) Na\"ive Resampling\label{fig:track-naive}\end{center}
+    \begin{center}\small (a) Na\"ive Resampling\label{fig:track-naive}\end{center}
     \end{minipage}
     \begin{minipage}{0.45\linewidth}
     \centering
     \includegraphics[width=0.95\linewidth]{track-optimal-100}
-    \begin{center}(b) Optimal Resampling\label{fig:track-optimal}\end{center}
+    \begin{center}\small (b) Optimal Resampling\label{fig:track-optimal}\end{center}
     \end{minipage}
     \caption{Vehicle Tracking Using BPF}
   \end{figure}
@@ -368,7 +375,7 @@ Monte Carlo methods, state estimation, filtering, tracking filters
 
   \begin{figure*}[t]
     \centering
-    \includegraphics[width=0.8\linewidth]{times}
+    \includegraphics[width=0.7\linewidth]{times}
     \caption{Runtimes for BPF Resampling Implementations}\label{fig:times}
   \end{figure*}
 
@@ -379,16 +386,13 @@ Monte Carlo methods, state estimation, filtering, tracking filters
   algorithm even at large particle counts, although the
   distinction is somewhat masked by the mediocre running
   time of the rest of the BPF implementation; resampling is
-  not the bottleneck for any of these fast algorithms.  The
-  performance of the regular algorithm without shuffling
-  illustrates this---the cost of that algorithm is quite
-  close to zero, and thus represents something of a bound on
-  the performance improvement possible through faster
-  resampling.
+  not the bottleneck for any of these fast algorithms, as
+  the near-zero cost of the regular algorithm without
+  shuffling indicates.
 
-  The observed performance difference between the
+  The performance difference between our
   Ziggurat-based implementation of optimal resampling and
-  the shuffled implementation of regular resampling is quite
+  our shuffled implementation of regular resampling is quite
   small.  Given this, we believe that the statistical
   correctness of optimal resampling will make it the best
   choice for many implementations.
