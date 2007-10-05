@@ -9,7 +9,9 @@
 
 #include "resample.h"
 
-static double nform(int n) {
+static inline double nform(int n, int sort) {
+    if (sort)
+	return polynomial(n);
     return 1.0 - pow(uniform(), 1.0 / (n + 1));
 }
 
@@ -18,7 +20,7 @@ int resample_optimal(double scale,
 		     int n, particle_info *newp,
 		     int sort) {
     double invscale = 1.0 / scale;
-    double u0 = nform(n - 1) * scale;
+    double u0 = nform(n - 1, sort) * scale;
     int i, j = 0;
     double t = 0;
     double best_w = 0;
@@ -39,7 +41,7 @@ int resample_optimal(double scale,
 	    best_w = newp[i].weight;
 	    best_i = i;
 	}
-	u0 = u0 + (scale - u0) * nform(n - i - 1);
+	u0 = u0 + (scale - u0) * nform(n - i - 1, sort);
     }
     return best_i;
 }

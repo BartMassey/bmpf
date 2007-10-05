@@ -61,7 +61,12 @@ else
 fi
 
 $X || echo 'set terminal postscript eps'
-$FILTER && echo "set key left"
+if $FILTER
+then
+    echo "set key left"
+else
+    echo "set key bottom"
+fi
 cat <<'EOF'
 set ylabel 'time (secs for 1000 steps)'
 set xlabel 'particles'
