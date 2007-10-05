@@ -386,11 +386,12 @@ Monte Carlo methods, state estimation, filtering, tracking filters
   the performance improvement possible through faster
   resampling.
 
-  Given the small performance difference between the
+  The observed performance difference between the
   Ziggurat-based implementation of optimal resampling and
-  the shuffled implementation of regular resampling, the
-  former seems likely to be a better choice in many
-  situations.
+  the shuffled implementation of regular resampling is quite
+  small.  Given this, we believe that the statistical
+  correctness of optimal resampling will make it the best
+  choice for many implementations.
 
 \section{Availability}
 
@@ -417,3 +418,6 @@ Monte Carlo methods, state estimation, filtering, tracking filters
 \bibliography{ltrs}
 
 \end{document}
+
+% LocalWords:  Resampling BPF resampling na ive resample pseudocode heapifying
+% LocalWords:  resampled
