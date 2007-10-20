@@ -12,8 +12,8 @@ CFLAGS = -g -Wall -O4
 LIBS = -L/local/lib/ziggurat -lrandom -lm
 TIMESEPS = times.eps timeszoom.eps timeszoom2.eps
 TIMESPDF = times.pdf timeszoom.pdf timeszoom2.pdf
-EPS = bars.eps track-naive-100.eps track-optimal-100.eps $(TIMESEPS)
-PDF = bars.pdf track-naive-100.pdf track-optimal-100.pdf $(TIMESPDF)
+EPS = bars.eps track-naive-100.eps track-optimalsort-100.eps $(TIMESEPS)
+PDF = bars.pdf track-naive-100.pdf track-optimalsort-100.pdf $(TIMESPDF)
       
 PLOTS = bench/regular.plot bench/regularsort.plot \
         bench/optimal.plot bench/optimalsort.plot \
