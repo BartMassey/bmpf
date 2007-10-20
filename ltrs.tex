@@ -534,12 +534,12 @@
     \begin{minipage}{0.45\linewidth}
     \centering
     \includegraphics[width=0.95\linewidth]{track-naive-100}
-    \begin{center}\small (a) Na\"ive Resampling\label{fig:track-naive}\end{center}
+    \begin{center}\small (a) Na\"ive Resampling\label{fig-track-naive}\end{center}
     \end{minipage}
     \begin{minipage}{0.45\linewidth}
     \centering
     \includegraphics[width=0.95\linewidth]{track-optimalsort-100}
-    \begin{center}\small (b) Optimal Resampling\label{fig:track-optimal}\end{center}
+    \begin{center}\small (b) Optimal Resampling\label{fig-track-optimal}\end{center}
     \end{minipage}
     \caption{Vehicle Tracking Using BPF}
   \end{figure}
@@ -547,7 +547,7 @@
   The important distinction between the algorithms we have
   presented is not
   quality, but rather runtime.
-  Figures~\ref{fig-times}-\ref{fig-timeszoom2} show the time
+  Figures~\ref{fig-times} and~\ref{fig-timeszoom2} show the time
   in seconds for 1000 iterations of BPF with various
   resampling algorithms as a function of the number of
   particles tracked / resampled.  The benchmark machine is
@@ -562,22 +562,11 @@
 
   \begin{figure}
     \centering
-    \includegraphics{timeszoom}
-    \caption{Detail of Figure~\ref{fig-times}}\label{fig-timeszoom}
-  \end{figure}
-
-  \begin{figure}
-    \centering
     \includegraphics{timeszoom2}
-    \caption{Detail of Figure~\ref{fig-timeszoom}}\label{fig-timeszoom2}
+    \caption{Detail of Figure~\ref{fig-times}}\label{fig-timeszoom2}
   \end{figure}
 
-  As expected, BPF using the na\"ive
-  algorithm becomes unusable at larger particle sizes,
-  whereas BPF using the optimal algorithm scales linearly.
-  The heap-based algorithms are quite competitive with the
-  optimal algorithm even at large particle counts, although
-  the distinction is somewhat masked by the mediocre running
+  The distinction between algorithms is somewhat masked by the mediocre running
   time of the rest of the BPF implementation; resampling is
   not the bottleneck for any of these fast algorithms.  The
   performance of the regular algorithm without shuffling illustrates
@@ -585,21 +574,15 @@
   and thus represents something of a bound on the
   performance improvement possible through faster resampling.
 
-  Sorting improves the performance of the na\"ive
-  implementation slightly for larger $n$, although it
-  does not pay until the particle count is large enough
-  (Figure~\ref{fig-timeszoom}).  Heapification seems to
-  carry a slight penalty, although in othe benchmarks we've
-  run it is a slight improvement.
-
-  The direct implementation of our optimal algorithm is
-  slightly out-performed by the heap-based algorithm until
-  around 30,000 particles, and by the heap-based algorithm
-  with heapification until around 40,000 particles.  The
-  Ziggurat implementation, however, is quite close to
-  regular resampling with shuffle at all particle counts.
-  Given the correctness of our optimal algorithm, we think
-  that this represents a significant achievement.
+  As expected, BPF using the na\"ive algorithm becomes
+  unusable at larger particle sizes, whereas BPF using the
+  optimal algorithm scales linearly.  There does not appear
+  to be much advantage in using a heap-based algorithm at
+  any particle size.  The Ziggurat implementation of our
+  optimal algorithm is quite close to regular resampling
+  with shuffle at large particle counts.  Given the
+  correctness of our optimal algorithm, we think that this
+  represents a significant achievement.
 
 \section{Discussion}
 

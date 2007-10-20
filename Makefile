@@ -10,8 +10,8 @@ CC = gcc
 #LIBS = -L/local/lib/ziggurat -lrandom_p -lm_p
 CFLAGS = -g -Wall -O4
 LIBS = -L/local/lib/ziggurat -lrandom -lm
-TIMESEPS = times.eps timeszoom.eps timeszoom2.eps
-TIMESPDF = times.pdf timeszoom.pdf timeszoom2.pdf
+TIMESEPS = times.eps timeszoom2.eps
+TIMESPDF = times.pdf timeszoom2.pdf
 EPS = bars.eps track-naive-100.eps track-optimalsort-100.eps $(TIMESEPS)
 PDF = bars.pdf track-naive-100.pdf track-optimalsort-100.pdf $(TIMESPDF)
       
@@ -57,7 +57,9 @@ times.eps: plottimes.sh $(PLOTS)
 	sh plottimes.sh | gnuplot > times.eps
 
 timeszoom.eps: plottimes.sh $(PLOTS)
-	sh plottimes.sh -p 700 | gnuplot > timeszoom.eps
+	sh plottimes.sh -p 500 \
+         optimalsort optimal regularsort regular | \
+        gnuplot > timeszoom.eps
 
 timeszoom2.eps: plottimes.sh $(PLOTS)
 	sh plottimes.sh -p 100 | gnuplot > timeszoom2.eps
