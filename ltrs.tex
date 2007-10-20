@@ -13,6 +13,10 @@
 \newcommand{\hyperg}{{{{}_2}{F_1}}}
 \newcommand{\du}{{\text{d}u}}
 
+\newtheorem{definition}{Definition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{proposition}{Proposition}
+
 \title{Fast Perfect Weighted Resampling}
 \author{Bart Massey\\
   Assoc. Prof. Computer Science\\
@@ -460,6 +464,52 @@
   we need to feed the {\em merge} algorithm of the previous
   section.  We thus have an $O(m + n)$ algorithm for random
   weighted selection.
+
+\subsubsection{Correctness of the Optimal Algorithm}
+
+  To see that our optimal algorithm is correct, we first
+  must describe what correctness means.  To do this, we will
+  define {\em statistical equivalence} of distributions, and
+  then show that the distribution produced by the optimal
+  algorithm is statistically equivalent to that produced by
+  the na\"ive algorithm.
+
+  \begin{definition}
+    A {\em distribution} is a tuple $\langle S, p\rangle$
+    where $S$ is a nonempty, possibly infinite set, and $p : S
+    \rightarrow \cal{R}$ is a probability function on
+    elements of the set normalized such that $$
+      \sum_{s \in S}{p(s)} = 1
+    $$
+  \end{definition}
+
+  \begin{definition}
+    Two distributions $\langle S, p_1\rangle$ and $\langle
+    S, p_2\rangle$over the same set $S$ are {\em
+    statistically equivalent} when the probability of each
+    element is equal, {\em i.e.,} when $$
+      \forall s \in S~.~p_1(s) = p_2(s)
+    $$
+  \end{definition}
+
+  \begin{definition}
+    The set $U_n$ of {\em n-point uniform
+    distributions} is defined by $$
+      U_n(a,b) = \{ \langle S, \frac{1}{|{[a\ldots b]}^n|~|~S \in {[a\ldots b]}^n \}
+    $$
+  \end{definition}
+
+  We proceed by showing that $U_n(a,b)$ is linear in $a$ and $b$.
+
+  \begin[Scaling]{lemma}
+    For all $s \in \cal{R}^{+}$, the distributions
+    $U_n(0, s)$ and $s \cdot U_n(0, 1)$ are statistically equivalent.
+  \end{lemma}
+
+  \begin[Offset]{lemma}
+    For all $t, a, b \in \cal{R}$, the distributions
+    $U_n(t + a, t + b)$ and $t + U_n(a, b)$ are statistically equivalent.
+  \end{lemma}
 
 \subsubsection{Faster Generation of Variates}
 
