@@ -226,7 +226,7 @@ static acoord imu_measure(double dt) {
 }
 
 static double gprob(double delta, double sd) {
-    return 1.0 - erf(fabs(delta) * M_SQRT1_2 / sd);
+    return erfc(fabs(delta) * M_SQRT1_2 / sd);
 }
 
 static double gps_prob(state *s, ccoord *gps) {

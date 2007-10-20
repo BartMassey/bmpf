@@ -465,7 +465,7 @@
 
   \begin{figure}
     \centering
-    \includegraphics{track-optimal-100}
+    \includegraphics{track-optimalsort-100}
     \caption{Vehicle Tracking---BPF With Optimal Resampling}\label{fig-track-optimal}
   \end{figure}
 
@@ -704,16 +704,16 @@
   some involvement.
 
   In the ``high performance embedded'' environment, a single
-  reasonable-quality CPU with reasonable four-function
-  floating point is available, the desired resampling
-  accuracy is high, real-time performance is usually
-  required, and thousands to tens of thousands of input
-  samples may be presented to the resampler.  In this
-  regime, a heap-based resampler, with or without heapification, seems
-  to be a reasonable choice.  One example of this
-  environment is the BPF sensor fusion on the PPC Linux
-  flight computer aboard our amateur sounding rocket, for
-  which this BPF implementation was originally developed.
+  high-performance CPU, typically without floating point, is
+  available, the desired resampling accuracy is high,
+  real-time performance is usually required, and thousands
+  to tens of thousands of input samples may be preseted to
+  the resampler.  In this environment, either our optimal
+  resampler or regular resampling with shuffle may be
+  appropriate.  One example of this environment is the BPF
+  sensor fusion on the PPC Linux flight computer aboard our
+  amateur sounding rocket, for which this BPF implementation
+  was originally developed.
 
   In the ``low-end embedded'' environment, a fairly slow
   CPU, typically without floating point, is available, the

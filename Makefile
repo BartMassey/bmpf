@@ -15,8 +15,10 @@ TIMESPDF = times.pdf timeszoom.pdf timeszoom2.pdf
 EPS = bars.eps track-naive-100.eps track-optimal-100.eps $(TIMESEPS)
 PDF = bars.pdf track-naive-100.pdf track-optimal-100.pdf $(TIMESPDF)
       
-PLOTS = bench/regular.plot bench/optimal.plot bench/logm.plot \
-        bench/logmsort.plot bench/naivesort.plot bench/naive.plot
+PLOTS = bench/regular.plot bench/regularsort.plot \
+        bench/optimal.plot bench/optimalsort.plot \
+        bench/logm.plot bench/logmsort.plot \
+        bench/naivesort.plot bench/naive.plot
 RESAMPLERS = resample/resample.o \
 	     resample/logm.o resample/naive.o \
              resample/optimal.o resample/regular.o
@@ -66,9 +68,9 @@ track-naive-100.eps: plottrack.sh bench/naive-100.dat
 	sh plottrack.sh bench/naive-100.dat | \
 	  gnuplot > track-naive-100.eps
 
-track-optimal-100.eps: plottrack.sh bench/optimal-100.dat
-	sh plottrack.sh bench/optimal-100.dat | \
-	  gnuplot > track-optimal-100.eps
+track-optimalsort-100.eps: plottrack.sh bench/optimalsort-100.dat
+	sh plottrack.sh bench/optimalsort-100.dat | \
+	  gnuplot > track-optimalsort-100.eps
 
 realclean: clean docclean
 
