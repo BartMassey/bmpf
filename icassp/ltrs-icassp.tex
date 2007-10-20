@@ -284,7 +284,6 @@ Monte Carlo methods, state estimation, filtering, tracking filters
 \subsection{Faster Generation of Variates}
 
   The method of directly generating variates described in the
-
   previous section has a minor limitation: it requires an
   exponentiation per variate.  Even a fast implementation of
   the mathematical function {\tt pow()} on a machine with
@@ -347,7 +346,7 @@ Monte Carlo methods, state estimation, filtering, tracking filters
   model are noisy.  Figures~\ref{fig:track-naive} and
   \ref{fig:track-optimal} show 1000-step actual and estimated vehicle
   tracks from the simulator for the 100-particle case, using
-  the na\"ive and optimal algorithms.  Note
+  the na\"ive and optimal (Ziggurat) algorithms.  Note
   that the quality of tracking of the two algorithms is
   indistinguishable, as expected.
 
