@@ -471,13 +471,12 @@
   must describe what correctness means.  To do this, we will
   define {\em statistical equivalence} of distributions, and
   then show that the distribution produced by the optimal
-  algorithm is statistically equivalent to that produced by
-  the na\"ive algorithm.
+  algorithm is uniform.
 
   \begin{definition}
     A {\em distribution} is a tuple $\langle S, p\rangle$
     where $S$ is a nonempty, possibly infinite set, and $p : S
-    \rightarrow \cal{R}$ is a probability function on
+    \rightarrow \cal{R}$ is a probability density function on
     elements of the set normalized such that $$
       \sum_{s \in S}{p(s)} = 1
     $$
@@ -493,23 +492,94 @@
   \end{definition}
 
   \begin{definition}
-    The set $U_n$ of {\em n-point uniform
+    The set $U_n$ of {\em $n$-point uniform
     distributions} is defined by $$
-      U_n(a,b) = \{ \langle S, \frac{1}{|{[a\ldots b]}^n|~|~S \in {[a\ldots b]}^n \}
+      U_n(a,b) = \left\{ \left\langle x, \frac{1}{b - a}\right\rangle \big| x \in [a..b]\right\}
     $$
   \end{definition}
 
   We proceed by showing that $U_n(a,b)$ is linear in $a$ and $b$.
 
-  \begin[Scaling]{lemma}
+  \begin{lemma}[Scaling]
     For all $s \in \cal{R}^{+}$, the distributions
     $U_n(0, s)$ and $s \cdot U_n(0, 1)$ are statistically equivalent.
   \end{lemma}
 
-  \begin[Offset]{lemma}
+  \begin{lemma}[Offset]
     For all $t, a, b \in \cal{R}$, the distributions
     $U_n(t + a, t + b)$ and $t + U_n(a, b)$ are statistically equivalent.
   \end{lemma}
+
+  For convenience of proof, we note that
+  Figure~\ref{fig-deviate} is actually an iterative version
+  of a more natural recursive algorithm show in
+  Figure~\ref{fig-recurse}.  The equivalence of the
+  algorithms of Figures~\ref{fig-deviate}
+  and~\ref{fig-recurse} is left as an exercise, but is straightforward.
+
+  \begin{figure}
+    \centering
+    \begin{minipage}{0.6\textwidth}
+      \begin{tabbing}
+      XX\=XXXX\=XXXX\=XXXX\=\kill
+      {\bf to} {\it randomize} $n$ points: \\
+      \>{\bf if} $n = 0$ {\bf return} $\langle \rangle$ \\
+      \>$u_0 \asgn (1-\mu)^{\frac{1}{n}}$ \\
+      \>$u = \textit{randomize} (n - 1)$ \\
+      \>{\bf return} $\langle u_0\rangle \cdot \left(u_0 + (1 - u_0) \cdot u \right)$
+    \end{tabbing}
+    \end{minipage}
+    \caption{Recursively Generating Deviates}\label{fig-recurse}
+  \end{figure}
+
+  The correctness of the recursive algorithm of
+  Figure~\ref{fig-recurse} can be established by a simple
+  inductive proof.  We sketch that proof here.
+
+  \begin{proposition}
+    The algorithm of Figure~\ref{fig-recurse} generates a
+    sorted uniform sequence of $n$ points, {\em i.e.,\/} an ordered vector
+    drawn from the uniform distribution $U_n(0,1)$.
+
+    {\bf Proof Sketch:}  We proceed by induction on the
+    number of points $n$ being generated.
+    \begin{description}
+    \item[\em Base Case:]
+    When $n = 0$, the sequence returned is a uniform
+    sequence of $0$ points.  (This is a bit disingenuous.
+    Note that the sequence returned when $n = 1$ is $$
+      \langle(1-\mu)^{\frac{1}{1}}\rangle \cdot
+    \langle\rangle = \langle 1 - \mu \rangle = \langle \mu
+    \rangle $$
+    The second equivalence is permissible because $\mu$ is a
+    uniform deviate in the range $0..1$, and therefore
+    statistically equivalent to $(1-\mu)$.)
+
+    \item[\em Inductive Case:]
+    By construction, the variate $u_0$ is
+    distributed in a fashion statistically equivalent to the
+    leftmost variate drawn from a uniform $n$-point
+    distribution.  What remains to show is that the remaining
+    $n-1$ variates are distributed properly.
+
+    To see this,
+    consider what is known about an arbitrary point $u_j$.
+    We know that $u_j$ was chosen uniformly over $0..1$, and
+    that it turned out that $u_j \ge u_0$.  A statistically equivalent
+    process for generating $u_j$ would thus be to generate
+    and reject
+    uniform variates until we have one greater than or
+    equal to $u_0$.  Thus, $u_j$ can be drawn from the
+    uniform distribution $U_{n-1}(u_0,1)$.  But by the
+    scaling and offset lemmas above, this is statistically
+    equivalent to drawing a $u$ from $U_{n-1}(0,1)$ and then
+    transforming it to $u_j = u_0 + (1-u_0)u$.  By the
+    inductive hypothesis, our code draws $u$ from the
+    uniform distribution; it then scales and offsets it in exactly the
+    right way to distribute it across the remaining
+    interval.
+    \end{description}
+  \end{proposition}
 
 \subsubsection{Faster Generation of Variates}
 

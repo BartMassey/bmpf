@@ -7,7 +7,7 @@
  */
 
 #define COUNT 10
-#define TRIALS 10000000
+#define TRIALS 1000000
 
 #include <stdio.h>
 #include <ziggurat/random.h>
