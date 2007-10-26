@@ -7,7 +7,7 @@
  */
 
 #define COUNT 10
-#define TRIALS 1000000
+#define TRIALS 10000000
 
 #include <stdio.h>
 #include <ziggurat/random.h>
@@ -19,7 +19,7 @@ void sample(void) {
     for (j = 0; j < TRIALS; j++) {
 	double x = 0;
 	for (i = 0; i < COUNT; i++) {
-	    double x0 = 1.0 - pow(uniform(), 1.0 / (COUNT - i));
+	    double x0 = polynomial(COUNT - i - 1);
 	    x += x0 * (1 - x);
 	    sample_mean[i] += x;
 	}
