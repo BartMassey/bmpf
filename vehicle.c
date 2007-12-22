@@ -22,6 +22,7 @@ extern double fmax(double, double);
 #define _GNU_SOURCE
 #include <getopt.h>
 #undef _GNU_SOURCE
+#include <ziggurat/random.h>
 #include "bpf.h"
 #include "sim.h"
 
@@ -55,7 +56,7 @@ static acoord imu_measure(double dt) {
     return result;
 }
 
-void run(double dt) {
+void run(void) {
     double t, dt = 0.01;
 
     init_state(&vehicle);
@@ -70,7 +71,7 @@ void run(double dt) {
     }
 }
 
-main(int argc, char **argv) {
+int main(int argc, char **argv) {
     while (1) {
 	int c = getopt_long(argc, argv, "dA:V:G:R:T:", options, &optind);
 	if (c == -1)
@@ -100,4 +101,5 @@ main(int argc, char **argv) {
 	}
     }
     run();
+    return 0;
 }

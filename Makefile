@@ -28,11 +28,17 @@ RESAMPLERS = resample/resample.o \
 .eps.pdf:
 	epstopdf $*.eps
 
+all: bpf vehicle
+
 bpf: bpf.o sim.o $(RESAMPLERS)
 	$(CC) $(CFLAGS) -Wno-strict-aliasing -o bpf \
 	    bpf.o sim.o $(RESAMPLERS) $(LIBS)
 
-bfp.o sim.o: sim.h sim_inline.h exp.h
+vehicle: vehicle.o sim.o
+	$(CC) $(CFLAGS) -Wno-strict-aliasing -o vehicle \
+	    vehicle.o sim.o $(LIBS)
+
+bpf.o sim.o vehicle.o: bpf.h sim.h sim_inline.h exp.h
 
 randtest: randtest.c
 	$(CC) $(CFLAGS) -o randtest randtest.c $(LIBS)
