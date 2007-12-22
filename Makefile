@@ -28,8 +28,11 @@ RESAMPLERS = resample/resample.o \
 .eps.pdf:
 	epstopdf $*.eps
 
-bpf: bpf.c exp.h $(RESAMPLERS)
-	$(CC) $(CFLAGS) -Wno-strict-aliasing -o bpf bpf.c $(RESAMPLERS) $(LIBS)
+bpf: bpf.o sim.o $(RESAMPLERS)
+	$(CC) $(CFLAGS) -Wno-strict-aliasing -o bpf \
+	    bpf.o sim.o $(RESAMPLERS) $(LIBS)
+
+bfp.o sim.o: sim.h sim_inline.h exp.h
 
 randtest: randtest.c
 	$(CC) $(CFLAGS) -o randtest randtest.c $(LIBS)
@@ -80,4 +83,4 @@ docclean:
 	-rm -f $(EPS) $(PDF) ltrs.dvi ltrs.log ltrs.ps ltrs.blg ltrs.aux
 
 clean:
-	-rm -f bpf gmon.out $(RESAMPLERS)
+	-rm -f bpf bpf.o sim.o gmon.out $(RESAMPLERS)

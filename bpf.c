@@ -15,7 +15,7 @@
 #include <stdio.h>
 #include <math.h>
 /* XXX GCC or ISO C99 only, but in the latter case M_PI and
-   friends may not exit */
+   friends may not exist */
 extern double fmin(double, double);
 extern double fmax(double, double);
 #include <stdlib.h>
@@ -23,14 +23,12 @@ extern double fmax(double, double);
 #define _GNU_SOURCE
 #include <getopt.h>
 #undef _GNU_SOURCE
-#include <ziggurat/random.h>
-#include "exp.h"
 #include "bpf.h"
+#include "sim.h"
 #include "resample/resample.h"
 
 
-
-static int report_particles, best_particle, fast_direction;
+static int report_particles, best_particle;
 static int resample_interval = 1;
 static double avar = M_PI / 32;
 static double rvar = 0.1;
@@ -58,141 +56,11 @@ static int nparticles = 100;
 static int sort = 0;
 static resample *resampler = resample_naive;
 
-#define BOX_DIM 20.0
-#define MAX_SPEED 2.0
-
-/* should be divisible by 4, and powers of 2 may
-   be more efficient */
-#define NDIRNS 1024
-double cos_dirn[NDIRNS];
-
-void init_dirn(void) {
-    int i;
-    for (i = 0; i < NDIRNS; i++) {
-	double t = i * 2 * M_PI / NDIRNS;
-	cos_dirn[i] = cos(t);
-    }
-}
-
-static inline int angle_dirn(double t) {
-    return (int)(floor(t * NDIRNS / (2 * M_PI))) % NDIRNS;
-}
-
-static inline int normalize_dirn(int d) {
-    while (d < 0)
-	d += NDIRNS;
-    return d % NDIRNS;
-}
-
-static double normalize_angle(double t) {
-    while (t >= 2 * M_PI)
-	t -= 2 * M_PI;
-    while (t < 0)
-	t += 2 * M_PI;
-    return t;
-}
-
-static inline double clip(double x, double low, double high) {
-    return fmin(high, fmax(x, low));
-}
-
-static inline double clip_box(double x) {
-    return clip(x, -BOX_DIM, BOX_DIM);
-}
-
-static inline double clip_speed(double x) {
-    return clip(x, 0, MAX_SPEED);
-}
-
-enum bounce_problem {
-    BOUNCE_OK,
-    BOUNCE_X,
-    BOUNCE_Y,
-    BOUNCE_XY
-};
-
-static enum bounce_problem bounce(double r, double t, state *s, double dt) {
-    double x0, y0, x1, y1;
-    int dc0, dms0;
-    if (fast_direction) {
-	dc0 = angle_dirn(t);
-	dms0 = normalize_dirn(dc0 + NDIRNS / 4);
-	x0 = s->posn.x + r * cos_dirn[dc0] * dt;
-	y0 = s->posn.y + r * cos_dirn[dms0] * dt;
-    } else {
-	x0 = s->posn.x + r * cos(t) * dt;
-	y0 = s->posn.y - r * sin(t) * dt;
-    }
-    x1 = clip_box(x0);
-    y1 = clip_box(y0);
-    if (x0 == x1 && y0 == y1) {
-	s->posn.x = x1;
-	s->posn.y = y1;
-	s->vel.t = t;
-	s->vel.r = r;
-	return BOUNCE_OK;
-    }
-    if (fast_direction) {
-	x0 = s->posn.x + r * cos(t) * dt;
-	y0 = s->posn.y - r * sin(t) * dt;
-	x1 = clip_box(x0);
-	y1 = clip_box(y0);
-	if (x0 == x1 && y0 == y1) {
-	    s->posn.x = x1;
-	    s->posn.y = y1;
-	    s->vel.t = t;
-	    s->vel.r = r;
-	    return BOUNCE_OK;
-	}
-    }
-    if (y0 == y1)
-	return BOUNCE_X;
-    if (x0 == x1)
-	return BOUNCE_Y;
-    return BOUNCE_XY;
-}
-
-static void update_state(state *s, double dt) {
-    double r0 = clip_speed(s->vel.r + gaussian(rvar));
-    double t0 = normalize_angle(s->vel.t + gaussian(avar));
-    enum bounce_problem b = bounce(r0, t0, s, dt);
-    if (b != BOUNCE_OK) {
-	r0 = s->vel.r;
-	t0 = s->vel.t;
-	b = bounce(r0, t0, s, dt);
-	switch (b) {
-	case BOUNCE_X:
-	    t0 = normalize_angle(M_PI - t0);
-	    b = bounce(r0, t0, s, dt);
-	    break;
-	case BOUNCE_Y:
-	    t0 = normalize_angle(2 * M_PI - t0);
-	    b = bounce(r0, t0, s, dt);
-	    break;
-	case BOUNCE_XY:
-	    t0 = normalize_angle(M_PI + t0);
-	    b = bounce(r0, t0, s, dt);
-	    break;
-	case BOUNCE_OK:
-	    break;
-	}
-    }
-    assert(b == BOUNCE_OK);
-}
-
-static state vehicle;
-
 static particle_info *particle_states[2];
 static int which_particle;
 static particle_info *particle;
 
-static void init_state(state *s) {
-	s->posn.x = clip_box(fabs(gaussian(1.0)));
-	s->posn.y = clip_box(fabs(gaussian(1.0)));
-	s->vel.r = fabs(gaussian(1.0));
-	s->vel.t = normalize_angle(uniform() * M_PI_2);
-}
-
+static state vehicle;
 
 static void init_particles(void) {
     double invscale = 1.0 / nparticles;
@@ -260,7 +128,7 @@ void bpf_step(ccoord *gps, acoord *imu,
     /* update particles */
     for (i = 0; i < nparticles; i++) {
 	double w;
-	update_state(&particle[i].state, dt);
+	update_state(&particle[i].state, dt, rvar, avar);
 	/* do probabilistic weighting */
 	double gp = gps_prob(&particle[i].state, gps);
 	double ip = imu_prob(&particle[i].state, imu, dt);
@@ -333,7 +201,7 @@ static void run(void) {
     for(t = 0; t <= nsecs; t += dt) {
 	int msecs = floor(t * 1000 + 0.5);
 	int report = report_particles && !(msecs % 10000);
-	update_state(&vehicle, dt);
+	update_state(&vehicle, dt, rvar, avar);
 	printf("%g %g", vehicle.posn.x, vehicle.posn.y);
 	ccoord gps = gps_measure();
 	acoord imu = imu_measure(dt);
