@@ -7,9 +7,9 @@
  * source distribution of this software for license terms.
  */
 
-/* Bayesian Particle Filtering demo: drive a simulated
-   vehicle with a simulated IMU-ish and GPS-ish device
-   around and try to track it. */
+/* Bayesian Particle Filtering demo: Try to track a
+   simulated vehicle with a simulated IMU-ish and GPS-ish
+   device. */
 
 #include <assert.h>
 #include <stdio.h>
@@ -34,8 +34,8 @@ static int resample_interval = 1;
 static struct option options[] = {
     {"report-particles", 0, 0, 'r'},
     {"best-particle", 0, 0, 'b'},
-    {"fast-direction", 0, 0, 'd'},
     {"resample-interval", 1, 0, 's'},
+    {"fast-direction", 0, 0, 'd'},
     {"angle-variance", 1, 0, 'A'},
     {"velocity-variance", 1, 0, 'V'},
     {"gps-variance", 1, 0, 'G'},
@@ -55,8 +55,6 @@ static particle_info *particle_states[2];
 static int which_particle;
 static particle_info *particle;
 
-static state vehicle;
-
 static void init_particles(void) {
     double invscale = 1.0 / nparticles;
     int i;
@@ -68,24 +66,6 @@ static void init_particles(void) {
 	init_state(&particle[i].state);
 	particle[i].weight = invscale;
     }
-}
-
-static ccoord gps_measure(void) {
-    ccoord result = vehicle.posn;
-    result.x += gaussian(gps_var);
-    result.y += gaussian(gps_var);
-    return result;
-}
-
-static acoord imu_measure(double dt) {
-    acoord result = vehicle.vel;
-    result.r += gaussian(imu_r_var * dt);
-    result.t = normalize_angle(result.t + gaussian(imu_a_var * dt));
-    if (result.r < 0) {
-	result.r = - result.r;
-	result.t = normalize_angle(result.t + M_PI);
-    }
-    return result;
 }
 
 static double gprob(double delta, double sd) {
@@ -112,7 +92,7 @@ static double imu_prob(state *s, acoord *imu, double dt) {
 }
 
 void bpf_step(ccoord *gps, acoord *imu,
-	      double t, double dt, int report) {
+	      double t, double dt) {
     int i;
     particle_info *newp;
     double tweight = 0;
@@ -146,21 +126,6 @@ void bpf_step(ccoord *gps, acoord *imu,
 	    est_state.vel.t = normalize_angle(est_state.vel.t + w * s->vel.t);
 	}
     }
-    if (report) {
-	double vx = vehicle.posn.x;
-	double vy = vehicle.posn.y;
-	FILE *fp;
-	char fn[128];
-	sprintf(fn, "benchtmp/particles-%g.dat", t);
-	fp = fopen(fn, "w");
-	assert(fp);
-	for (i = 0; i < nparticles; i++) {
-	    double px = particle[i].state.posn.x;
-	    double py = particle[i].state.posn.y;
-	    fprintf(fp, "%g %g\n", px - vx, py - vy);
-	}
-	fclose(fp);
-    }
     resample_count = (resample_count + 1) % resample_interval;
     if (resample_count == 0) {
 	/* resample */
@@ -189,26 +154,37 @@ void bpf_step(ccoord *gps, acoord *imu,
     }
 }
 
+static int read_instruments(ccoord *gps, acoord *imu, int *t_ms) {
+    double x, y;
+    int n = scanf("%d %lg %lg %lg %lg %lg %lg\n", t_ms, &x, &y,
+		  &gps->x, &gps->y, &imu->r, &imu->t);
+    if (n == 7)
+	return 1;
+    if (n != 0) {
+	fprintf(stderr, "bpf: partial instrument read\n");
+	exit(1);
+    }
+    return 0;
+}
+
 static void run(void) {
-    double t;
+    ccoord gps;
+    acoord imu;
+    double t = 0;
+    int t_ms;
     init_particles();
-    init_state(&vehicle);
-    for(t = 0; t <= nsecs; t += dt) {
-	int msecs = floor(t * 1000 + 0.5);
-	int report = report_particles && !(msecs % 10000);
-	update_state(&vehicle, dt);
-	printf("%g %g", vehicle.posn.x, vehicle.posn.y);
-	ccoord gps = gps_measure();
-	acoord imu = imu_measure(dt);
-	bpf_step(&gps, &imu, t, dt, report);
-	printf("\n");
+    while (read_instruments(&gps, &imu, &t_ms)) {
+	double t0 = t_ms * (1.0 / 1000.0);
+	double dt = t0 - t;
+	t = t0;
+	bpf_step(&gps, &imu, t, dt);
     }
 }
 
 int main(int argc, char **argv) {
     struct resample_info *entry;
     while (1) {
-	int c = getopt_long(argc, argv, "rbds:", options, &optind);
+	int c = getopt_long(argc, argv, "rbs:dA:V:G:R:T:", options, &optind);
 	if (c == -1)
 	    break;
 	switch (c) {
@@ -217,6 +193,9 @@ int main(int argc, char **argv) {
 	    break;
 	case 'b':
 	    best_particle = 1;
+	    break;
+	case 's':
+	    resample_interval = atoi(optarg);
 	    break;
 	case 'd':
 	    fast_direction = 1;
@@ -235,9 +214,6 @@ int main(int argc, char **argv) {
 	    break;
 	case 'T':
 	    imu_a_var = atof(optarg);
-	    break;
-	case 's':
-	    resample_interval = atoi(optarg);
 	    break;
 	default:
 	    fprintf(stderr, "bpf: usage error\n");
