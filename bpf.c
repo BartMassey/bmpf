@@ -30,22 +30,17 @@ extern double fmax(double, double);
 
 static int report_particles, best_particle;
 static int resample_interval = 1;
-static double avar = M_PI / 32;
-static double rvar = 0.1;
-static double gps_var = 5.0;
-static double imu_r_var = 0.5;
-static double imu_a_var = M_PI / 8;
 
 static struct option options[] = {
     {"report-particles", 0, 0, 'r'},
     {"best-particle", 0, 0, 'b'},
     {"fast-direction", 0, 0, 'd'},
+    {"resample-interval", 1, 0, 's'},
     {"angle-variance", 1, 0, 'A'},
     {"velocity-variance", 1, 0, 'V'},
     {"gps-variance", 1, 0, 'G'},
     {"imu-angle-variance", 1, 0, 'R'},
     {"imu-velocity-variance", 1, 0, 'T'},
-    {"resample-interval", 1, 0, 's'},
     {0, 0, 0, 0}
 };
 
@@ -128,7 +123,7 @@ void bpf_step(ccoord *gps, acoord *imu,
     /* update particles */
     for (i = 0; i < nparticles; i++) {
 	double w;
-	update_state(&particle[i].state, dt, rvar, avar);
+	update_state(&particle[i].state, dt);
 	/* do probabilistic weighting */
 	double gp = gps_prob(&particle[i].state, gps);
 	double ip = imu_prob(&particle[i].state, imu, dt);
@@ -201,7 +196,7 @@ static void run(void) {
     for(t = 0; t <= nsecs; t += dt) {
 	int msecs = floor(t * 1000 + 0.5);
 	int report = report_particles && !(msecs % 10000);
-	update_state(&vehicle, dt, rvar, avar);
+	update_state(&vehicle, dt);
 	printf("%g %g", vehicle.posn.x, vehicle.posn.y);
 	ccoord gps = gps_measure();
 	acoord imu = imu_measure(dt);

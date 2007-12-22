@@ -23,6 +23,12 @@ extern double fmax(double, double);
 #include "exp.h"
 #include "sim.h"
 
+double avar = M_PI / 32;
+double rvar = 0.1;
+double gps_var = 5.0;
+double imu_r_var = 0.5;
+double imu_a_var = M_PI / 8;
+
 int fast_direction = 0;
 double cos_dirn[NDIRNS];
 
@@ -100,7 +106,7 @@ void init_state(state *s) {
 }
 
 
-void update_state(state *s, double dt, double rvar, double avar) {
+void update_state(state *s, double dt) {
     double r0 = clip_speed(s->vel.r + gaussian(rvar));
     double t0 = normalize_angle(s->vel.t + gaussian(avar));
     enum bounce_problem b = bounce(r0, t0, s, dt);
