@@ -91,8 +91,8 @@ static double imu_prob(state *s, acoord *imu, double dt) {
     return pr * pt;
 }
 
-void bpf_step(ccoord *gps, acoord *imu,
-	      double t, double dt) {
+void bpf_step(ccoord *vehicle, ccoord *gps, acoord *imu,
+	      double t, double dt, int report) {
     int i;
     particle_info *newp;
     double tweight = 0;
@@ -126,6 +126,21 @@ void bpf_step(ccoord *gps, acoord *imu,
 	    est_state.vel.t = normalize_angle(est_state.vel.t + w * s->vel.t);
 	}
     }
+    if (report) {
+	double vx = vehicle->x;
+	double vy = vehicle->y;
+	FILE *fp;
+	char fn[128];
+	sprintf(fn, "benchtmp/particles-%g.dat", t);
+	fp = fopen(fn, "w");
+	assert(fp);
+	for (i = 0; i < nparticles; i++) {
+	    double px = particle[i].state.posn.x;
+	    double py = particle[i].state.posn.y;
+	    fprintf(fp, "%g %g\n", px - vx, py - vy);
+	}
+	fclose(fp);
+    }
     resample_count = (resample_count + 1) % resample_interval;
     if (resample_count == 0) {
 	/* resample */
@@ -154,33 +169,37 @@ void bpf_step(ccoord *gps, acoord *imu,
     }
 }
 
-static int read_instruments(ccoord *gps, acoord *imu, int *t_ms) {
-    double x, y;
-    int n = scanf("%d %lg %lg %lg %lg %lg %lg\n", t_ms, &x, &y,
+static int read_inputs(ccoord *vehicle, ccoord *gps, acoord *imu, int *t_ms) {
+    int n = scanf("%d %lg %lg %lg %lg %lg %lg\n", t_ms,
+		  &vehicle->x, &vehicle->y,
 		  &gps->x, &gps->y, &imu->r, &imu->t);
     if (n == 7)
 	return 1;
-    if (n == EOF && ferror(stdin)) {
+    if (ferror(stdin)) {
 	perror("bpf");
 	exit(1);
     }
-    if (n == EOF)
-        return 0;
-    fprintf(stderr, "bpf: partial instrument read (short %d)\n", 7 - n);
-    exit(1);
+    assert(n == EOF);
+    return 0;
 }
 
 static void run(void) {
-    ccoord gps;
+    ccoord vehicle, gps;
     acoord imu;
     double t = 0;
     int t_ms;
+    int t_last = 0;
     init_particles();
-    while (read_instruments(&gps, &imu, &t_ms)) {
+    while (read_inputs(&vehicle, &gps, &imu, &t_ms)) {
 	double t0 = t_ms * (1.0 / 1000.0);
 	double dt = t0 - t;
+	int report = t_ms - t_last >= 10000;
+	if (report)
+	    t_last = t_ms;
 	t = t0;
-	bpf_step(&gps, &imu, t, dt);
+	printf("%g %g", vehicle.x, vehicle.y);
+	bpf_step(&vehicle, &gps, &imu, t, dt, report);
+	printf("\n");
     }
 }
 
