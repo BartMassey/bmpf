@@ -160,11 +160,14 @@ static int read_instruments(ccoord *gps, acoord *imu, int *t_ms) {
 		  &gps->x, &gps->y, &imu->r, &imu->t);
     if (n == 7)
 	return 1;
-    if (n != 0) {
-	fprintf(stderr, "bpf: partial instrument read\n");
+    if (n == EOF && ferror(stdin)) {
+	perror("bpf");
 	exit(1);
     }
-    return 0;
+    if (n == EOF)
+        return 0;
+    fprintf(stderr, "bpf: partial instrument read (short %d)\n", 7 - n);
+    exit(1);
 }
 
 static void run(void) {
