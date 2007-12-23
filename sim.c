@@ -25,7 +25,7 @@ extern double fmax(double, double);
 
 double avar = M_PI / 32;
 double rvar = 0.1;
-double gps_var = 5.0;
+double gps_var = 1.0;
 double imu_r_var = 0.5;
 double imu_a_var = M_PI / 8;
 
