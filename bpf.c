@@ -264,7 +264,7 @@ void bpf_step(ccoord *gps, acoord *imu,
 	/* do probabilistic weighting */
 	double gp = gps_prob(&particle[i].state, gps);
 	double ip = imu_prob(&particle[i].state, imu, dt);
-        w = particle[i].weight * gp * ip;
+        w = gp * ip;
 	particle[i].weight = w;
 	tweight += w;
     }
