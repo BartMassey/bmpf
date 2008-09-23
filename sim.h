@@ -26,4 +26,4 @@ extern double cos_dirn[NDIRNS];
 
 extern void init_dirn(void);
 extern void init_state(state *s);
-extern void update_state(state *s, double dt);
+extern void update_state(state *s, double dt, int noise);

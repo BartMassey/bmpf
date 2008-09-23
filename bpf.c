@@ -97,13 +97,14 @@ void bpf_step(ccoord *vehicle, ccoord *gps, acoord *imu,
     particle_info *newp;
     double tweight = 0;
     double invtweight;
-    int best;
+    int best, worst;
+    double best_weight, worst_weight;
     state est_state;
     static int resample_count = 0;
     /* update particles */
     for (i = 0; i < nparticles; i++) {
 	double w;
-	update_state(&particle[i].state, dt);
+	update_state(&particle[i].state, dt, 1);
 	/* do probabilistic weighting */
 	double gp = gps_prob(&particle[i].state, gps);
 	double ip = imu_prob(&particle[i].state, imu, dt);
@@ -149,21 +150,32 @@ void bpf_step(ccoord *vehicle, ccoord *gps, acoord *imu,
 	/* complete */
 	particle = newp;
 	which_particle = !which_particle;
-    } else {
-	double best_weight = particle[0].weight;
+    }
+    {
+	best_weight = particle[0].weight;
+	worst_weight = particle[0].weight;
 	best = 0;
+	worst = 0;
 	for (i = 1; i < nparticles; i++) {
 	    if (particle[i].weight > best_weight) {
 		best = i;
 		best_weight = particle[i].weight;
+	    } else if (particle[i].weight < worst_weight) {
+		worst = i;
+		worst_weight = particle[i].weight;
 	    }
 	}
     }
-    printf(" %g %g",
+    printf("  %g %g %g",
+	   best_weight,
 	   particle[best].state.posn.x,
 	   particle[best].state.posn.y);
+    printf("  %g %g %g",
+	   worst_weight,
+	   particle[worst].state.posn.x,
+	   particle[worst].state.posn.y);
     if (!best_particle) {
-	printf(" %g %g",
+	printf("  %g %g",
 	       est_state.posn.x,
 	       est_state.posn.y);
     }

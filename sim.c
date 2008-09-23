@@ -57,7 +57,8 @@ enum bounce_problem {
     BOUNCE_XY
 };
 
-static enum bounce_problem bounce(double r, double t, state *s, double dt) {
+static enum bounce_problem bounce(double r, double t, state *s,
+				  double dt, int noise) {
     double x0, y0, x1, y1;
     int dc0, dms0;
     if (fast_direction) {
@@ -106,26 +107,26 @@ void init_state(state *s) {
 }
 
 
-void update_state(state *s, double dt) {
-    double r0 = clip_speed(s->vel.r + gaussian(rvar));
-    double t0 = normalize_angle(s->vel.t + gaussian(avar));
-    enum bounce_problem b = bounce(r0, t0, s, dt);
+void update_state(state *s, double dt, int noise) {
+    double r0 = clip_speed(s->vel.r + gaussian(rvar) * (1 + 8 * noise));
+    double t0 = normalize_angle(s->vel.t + gaussian(avar) * (1 +  8 * noise));
+    enum bounce_problem b = bounce(r0, t0, s, dt, noise);
     if (b != BOUNCE_OK) {
 	r0 = s->vel.r;
 	t0 = s->vel.t;
-	b = bounce(r0, t0, s, dt);
+	b = bounce(r0, t0, s, dt, 0);
 	switch (b) {
 	case BOUNCE_X:
 	    t0 = normalize_angle(M_PI - t0);
-	    b = bounce(r0, t0, s, dt);
+	    b = bounce(r0, t0, s, dt, 0);
 	    break;
 	case BOUNCE_Y:
 	    t0 = normalize_angle(2 * M_PI - t0);
-	    b = bounce(r0, t0, s, dt);
+	    b = bounce(r0, t0, s, dt, 0);
 	    break;
 	case BOUNCE_XY:
 	    t0 = normalize_angle(M_PI + t0);
-	    b = bounce(r0, t0, s, dt);
+	    b = bounce(r0, t0, s, dt, 0);
 	    break;
 	case BOUNCE_OK:
 	    break;

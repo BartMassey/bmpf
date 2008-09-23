@@ -62,7 +62,7 @@ void run(void) {
     init_state(&vehicle);
     for (t = 0; t <= 10.0; t += dt) {
 	int msecs = floor(t * 1000 + 0.5);
-	update_state(&vehicle, dt);
+	update_state(&vehicle, dt, 0);
 	ccoord gps = gps_measure();
 	acoord imu = imu_measure(dt);
 	printf("%d %g %g %g %g %g %g\n", msecs,
