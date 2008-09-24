@@ -1,0 +1,15 @@
+archive
+bench
+!bench/*.plot
+!bench/naive-100.dat
+!bench/optimalsort-100.dat
+*.eps
+*.pdf
+*.o
+ltrs.*
+!ltrs.tex
+!ltrs.bib
+!ltrs.pdf
+bpf
+vehicle
+vehicle.dat
