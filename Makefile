@@ -45,6 +45,9 @@ randtest: randtest.c
 
 $(RESAMPLERS): bpf.h resample/resample.h
 
+vehicle.dat: vehicle
+	./vehicle >vehicle.dat
+
 all: bpf ltrs.pdf
 
 ltrs.pdf: ltrs.tex ltrs.bbl $(PDF)
@@ -92,5 +95,5 @@ docclean:
 
 clean:
 	-rm -f vehicle vehicle.o bpf bpf.o sim.o \
-               randtest vehicle.out gmon.out exp \
+               randtest vehicle.dat gmon.out exp \
                $(RESAMPLERS)
