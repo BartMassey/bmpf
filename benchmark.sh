@@ -7,8 +7,8 @@
 # distribution of this software for license terms.
 
 # try at most this many particles
-#maxp=150000
-maxp=1500
+maxp=150000
+#maxp=1500
 # if a run takes longer than this, stop this algorithm
 maxt=120.0
 # make sure we accumulate at least this much runtime for each trial
