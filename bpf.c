@@ -26,7 +26,7 @@ extern double fmax(double, double);
 #include "bpf.h"
 #include "sim.h"
 #include "resample/resample.h"
-
+#include "exp.h"
 
 static int report_particles, best_particle;
 static int resample_interval = 1;
@@ -166,6 +166,7 @@ void bpf_step(ccoord *vehicle, ccoord *gps, acoord *imu,
 	    }
 	}
     }
+#ifdef DIAGNOSTIC_PRINT
     printf("  %g %g %g",
 	   best_weight,
 	   particle[best].state.posn.x,
@@ -174,6 +175,11 @@ void bpf_step(ccoord *vehicle, ccoord *gps, acoord *imu,
 	   worst_weight,
 	   particle[worst].state.posn.x,
 	   particle[worst].state.posn.y);
+#else
+    printf("  %g %g",
+	   particle[best].state.posn.x,
+	   particle[best].state.posn.y);
+#endif
     if (!best_particle) {
 	printf("  %g %g",
 	       est_state.posn.x,

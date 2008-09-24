@@ -86,7 +86,11 @@ track-optimalsort-100.eps: plottrack.sh bench/optimalsort-100.dat
 realclean: clean docclean
 
 docclean:
-	-rm -f $(EPS) $(PDF) ltrs.dvi ltrs.log ltrs.ps ltrs.blg ltrs.aux
+	-rm -f $(EPS) $(PDF) \
+               ltrs.pdf ltrs.dvi ltrs.log \
+               ltrs.ps ltrs.blg ltrs.aux
 
 clean:
-	-rm -f bpf bpf.o sim.o gmon.out $(RESAMPLERS)
+	-rm -f vehicle vehicle.o bpf bpf.o sim.o \
+               randtest vehicle.out gmon.out exp \
+               $(RESAMPLERS)

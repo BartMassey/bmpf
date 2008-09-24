@@ -14,6 +14,7 @@ maxt=120.0
 # make sure we accumulate at least this much runtime for each trial
 rept=1.0
 
+vehicle=vehicle.dat
 plottmp=/tmp/benchmark.$$
 trap "rm -f $plottmp" 0
 if [ $# -eq 0 ] ; then set `awk '{print $1;}' <algorithms` ; fi
@@ -23,7 +24,7 @@ do
   incr=$p
   echo $a
   # warm up the caches
-  (time ./bpf $p $a >/dev/null) 2>/dev/null
+  (time ./bpf $p $a <$vehicle >/dev/null) 2>/dev/null
   while [ $p -le $maxp ]
   do
     timesfile=benchtmp/$a-$p.time
@@ -33,7 +34,7 @@ do
     tt=0
     while nickle -e "if($tt < $rept) exit(0); else exit(1);;"
     do
-      (time ./bpf $p $a >$datfile) 2>$timesfile
+      (time ./bpf $p $a <$vehicle >$datfile) 2>$timesfile
       if [ $? -ne 0 ]
       then
 	  echo "execution failure: see $timesfile for details" >&2
