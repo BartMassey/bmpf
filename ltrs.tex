@@ -29,12 +29,12 @@
 
   \begin{abstract}
   We describe an algorithm for perfect weighted-random
-  resampling of a population with time complexity $O(m +
-  n)$ for resampling $m$ inputs to produce $n$ outputs.
+  sampling of a population with time complexity $O(m +
+  n)$ for sampling $m$ inputs to produce $n$ outputs.
   This algorithm is an incremental improvement over
-  standard resampling algorithms.  Our resampling
+  standard sampling algorithms.  Our sampling
   algorithm is parallelizable, with linear speedup.
-  Linear-time resampling yields notable performance
+  Linear-time sampling yields notable performance
   improvements in our motivating example of Sequential
   Importance Resampling for Bayesian
   Particle Filtering.
@@ -44,28 +44,31 @@
   Bayesian Particle Filtering (BPF)~\cite{bpf} is an exciting
   new methodology for state space tracking and sensor
   fusion.  The bottleneck step in a typical BPF
-  implementation is the weighted resampling step known as
+  implementation is the weighted sampling step known as
   Sequential Importance Resampling: creating a new
   population of ``particles'' from an old population by
   random sampling from the source population according to
-  the particle weights.  Consider resampling $m$ inputs to
-  produce $n$ outputs.  The na\"ive algorithm has time
+  the particle weights.  This sampling method is known as
+  Roulette Wheel Sampling (RWS) in the literature, though
+  the even spacing of bins in a conventional roulette wheel
+  does not apply here.
+
+  Consider sampling $m$ inputs to produce $n$ outputs.
+  The na\"ive RWS algorithm, shown below, has time
   complexity $O(mn)$.  BPF implementations that resample
-  using this expensive $O(mn)$ algorithm can afford to
-  resample only sporadically; this represents a difficult
-  engineering tradeoff between BPF quality and computational
-  cost.
+  using this expensive algorithm can afford to resample only
+  sporadically; this represents a difficult engineering
+  tradeoff between BPF quality and computational cost.
 
   In this paper we first present an algorithm with
   complexity $O(m + n \log m)$ based on a binary
   heap-structured tree which is straightforward, has good
   performance, and requires no special math.  This is
-  essentially a binary search method, often used in faster
-  BPF implementations~\cite{arulampalam02tutorial}.  However, we introduce a potential
-  performance optimization that takes advantage of the heap
-  property.
+  essentially a binary search method.  We then introduce a
+  potential performance optimization that takes advantage of
+  the heap property.
 
-  Resampling via binary search is often used in faster BPF
+  Sampling via binary search is often used in faster BPF
   implementations~\cite{arulampalam02tutorial}.  However,
   since the other steps in a BPF iteration are linear in the
   number of particles, a $O(m + n \log m)$ binary search
@@ -75,38 +78,42 @@
   memory access patterns of a binary search also interact
   badly with the cache of a modern processor.
 
-  We introduce a family of perfect and approximate
-  algorithms based on the idea of simulating the scans of
-  the na\"ive algorithm in parallel; making a single pass
-  through the $m$ input samples and selecting $n$ output
-  samples during this pass.
-
   One well-known method that has been used to regain the
-  performance lost to resampling is to give up on
+  performance lost to RWS resampling in BPF is to give up on
   statistical correctness and simply sample at regular
-  intervals~\cite{kitagawa}.  We derive a standard
-  approximate $O(m + n)$ algorithms for regular resampling.
-  In practice, this seems to work well, and to run quite
-  quickly.  However, one cannot help but be a bit concerned
-  that regular resampling will ``go wrong'' in a crucial
-  situation, due to correlations between the sampling
-  interval and an unfortunate particle set.  Although the
-  idea does not seem to be widely known, the resistance of
-  regular resampling to such correlations can be improved
-  simply by shuffling the particles before resampling.
-  Since shuffling can be done in $O(n)$ time with good
-  constant factors, this is probably a good idea.
+  intervals~\cite{kitagawa}.  One early advocate of this
+  approach was Baker~\cite{baker}, who developed it for
+  tournament selection in genetic algorithms, called it
+  Stochastic Universal Sampling (SUS) and showed that it was
+  statistically optimal in that application.  We derive the
+  standard $O(m + n)$ algorithm for SUS.  In practice, this
+  seems to work well for BPF, and to run quite quickly.
+  However, one cannot help but be a bit concerned that SUS
+  will ``go wrong'' in a crucial situation due to
+  correlations between the sampling interval and an
+  unfortunate particle set iterated over many resamplings.
+  Although the idea does not seem to be widely known, the
+  resistance of iterated SUS to such correlations can be
+  improved simply by shuffling the particles before
+  sampling.  Since shuffling can be done in $O(n)$ time with
+  good constant factors, this is probably a good idea.
 
-  The principal contribution of this work is an algorithm
+  The principal contribution of our work is an algorithm
   that we believe to be novel, with time complexity $O(m +
-  n)$ (requiring just the normal $O(m + n)$ space) that
-  produces a resampling statistically equivalent to na\"ive
-  resampling. For a simple array representation of the
-  output, simply initializing the output will require time
-  $O(n)$.  It seems that the input must be scanned at least
-  once just to determine the total input weight for
-  normalization.  Thus, the running time of our algorithms
-  is apparently optimal.
+  n)$ (requiring just the normal $O(m + n)$ space), that
+  produces a sample statistically equivalent to na\"ive
+  RWS. For a simple array representation of the output,
+  simply initializing the output will require time $O(n)$.
+  It seems that the input must be scanned at least once just
+  to determine the total input weight for normalization.
+  Thus, the running time of our algorithms is apparently
+  optimal.
+
+  The fundamental idea behind our algorithm is to simulate
+  the scans of the the na\"ive algorithm in parallel.  We
+  achieve our performance by making just a single pass
+  through the $m$ input samples, selecting $n$ output
+  samples during this pass.
 
   An $O(n)$ algorithm by Beadle and Djuric~\cite{recount}
   produces an output sample that is only approximately
@@ -131,43 +138,48 @@
   BPF is typically computation-limited, and all of the other
   steps in a BPF iteration require time linear in the
   population size.  By linearizing resampling, we remove the
-  resampling bottleneck, allowing higher population
-  sizes that in turn dramatically improve BPF performance.
+  resampling bottleneck, allowing higher population sizes
+  that dramatically improve BPF performance over a na\"ive
+  RWS implementation.  Since our algorithm simulates RWS
+  exactly, it produces a different population than
+  SUS---presumably a more desirable one (although future
+  work needs to verify this).
 
   In the remainder of this paper we review existing
   algorithms, describe our algorithms, and report the
   effectiveness of algorithms in a BPF implementation.  We
   conclude with a discussion of various issues.
 
-\section{Weighted Resampling Algorithms}
+\section{Weighted Sampling Algorithms}
 
   There are a number of approaches to the weighted
-  resampling problem.  In this section, we describe some
-  weighted resampling algorithms in order of increasing time
+  Sampling problem.  In this section, we describe some
+  weighted sampling algorithms in order of increasing time
   efficiency.  We conclude with the description of some
   $O(m + n)$ algorithms.
 
   For what follows, assume an array $s$ of $m$ input
-  samples, and an output array $s'$ that will hold the $n$
-  output samples of the resampling.  Assume further that
-  associated with each sample $s_i$ is a weight $w(s_i)$,
-  and that the weights have been normalized to sum to 1.
-  This can of course be done in time $O(m)$, but typical
-  efficient implementations keep a running weight total
-  during weight generation, and then normalize their
-  sampling range rather than normalizing the weights
-  themselves.  We thus discount the normalization cost in
-  our analysis.
+  samples, and an output array $s'$ that will hold $n$
+  output samples.  Assume further that associated with each
+  sample $s_i$ is a weight $w(s_i)$, and that the weights
+  have been normalized to sum to $1$.  This can of course be
+  done in time $O(m)$; however, typical efficient
+  implementations keep a running weight total during weight
+  generation and then normalize their sampling range, rather
+  than normalizing the weights themselves.  We thus discount
+  the normalization cost in our analysis.
 
-\subsection{A Na\"ive $O(mn)$ Resampling Algorithm}\label{sec-naive}
+\subsection{A Na\"ive $O(mn)$ Sampling Algorithm}\label{sec-naive}
 
-  The na\"ive approach to resampling has been re-invented
-  many times.  A correct, if inefficient, way to resample is
+  The na\"ive approach to sampling has been re-invented
+  many times.  As noted above, it is currently found
+  in the literature under the name Roulette Wheel Sampling.
+  A correct, if inefficient, way to sample is
   via the pseudocode of Figure~\ref{fig-omn}.  The {\em
-  sample} procedure selects the first sample such that the
+  sample-one} procedure selects the first sample such that the
   sum of weights in the input up to and including this
   sample is greater than some index value $\mu$.  The index
-  value is chosen in {\em resample} by uniform random
+  value is chosen in {\em sample} by uniform random
   sampling from the distribution $[0..1]$, with each output
   position being filled in turn.
 
@@ -176,22 +188,22 @@
     \begin{minipage}{0.6\textwidth}
       \begin{tabbing}
       XX\=XXXX\=XXXX\=XXXX\=\kill
-      {\bf to} {\it sample}$(\mu)$: \\
+      {\bf to} {\it sample-one}$(\mu)$: \\
       \>$t \asgn 0$ \\
       \>{\bf for} $i$ {\bf from} $1$ {\bf to} $m$ {\bf do} \\
       \>\>$t \asgn t + w(s_i)$ \\
       \>\>{\bf if} $t > \mu$ {\bf then} \\
       \>\>\>{\bf return} $s_i$ \newcode
-      {\bf to} {\it resample}: \\
+      {\bf to} {\it sample}: \\
       \>{\bf for} $i$ {\bf from} $1$ {\bf to} $n$ {\bf do} \\
       \>\>$\mu \asgn \textit{random-real}([0..1])$ \\
-      \>\>$s'_i \asgn sample(\mu)$
+      \>\>$s'_i \asgn sample-one(\mu)$
       \end{tabbing}
     \end{minipage}
     \caption{Na\"ive Resampling}\label{fig-omn}
   \end{figure}
 
-  The na\"ive algorithm has its advantages.  It is easy to
+  The na\"ive RWS algorithm has its advantages.  It is easy to
   verify that it is a perfect sampling algorithm.  It is
   easy to implement, and easy to parallelize.  The expected
   running time is $o(\frac{1}{2}mn)$.  If the distribution
@@ -202,7 +214,7 @@
   resampling is still the bottleneck step in BPF
   implementations that employ it.
 
-\subsection{A Heap-based $O(m + n \log m)$ Resampling Algorithm}\label{sec-heap}
+\subsection{A Heap-based $O(m + n \log m)$ Sampling Algorithm}\label{sec-heap}
 
   One simple way to improve the performance of the na\"ive
   algorithm is to improve upon the linear scan performed by
@@ -235,7 +247,7 @@
     \caption{Computing Weights of Sub-heaps}\label{fig-heap}
   \end{figure}
 
-  Given $w_t$, {\em sample} can perform a scan for the
+  Given $w_t$, {\em sample-one} can perform a scan for the
   correct input weight in time $O(\log m)$ by scanning down
   from the top of the heap, as shown in
   Figure~\ref{fig-onlm}.  At each step, if the target
@@ -251,14 +263,14 @@
     \begin{minipage}{0.6\textwidth}
       \begin{tabbing}
       XX\=XXXX\=XXXX\=XXXX\=\kill
-      {\bf to} {\it sample}$(\mu,i)$: \\
+      {\bf to} {\it sample-one}$(\mu,i)$: \\
       \>$l \asgn 2i$ \\
       \>$r \asgn 2i + 1$ \\
       \>{\bf if} $\mu < w_t(s_l)$ {\bf then} \\
-      \>\>{\bf return} {\it sample}$(\mu, l)$ \\
+      \>\>{\bf return} {\it sample-one}$(\mu, l)$ \\
       \>{\bf if} $\mu \le w_t(s_l) + w(s_i)$ {\bf then} \\
       \>\>{\bf return} $s_i$ \\
-      \>{\bf return} {\it sample}$(\mu - w_t(s_l) - w(s_i), r)$
+      \>{\bf return} {\it sample-one}$(\mu - w_t(s_l) - w(s_i), r)$
     \end{tabbing}
     \end{minipage}
     \caption{Heap-based Sampling}\label{fig-onlm}
@@ -276,7 +288,7 @@
   this optimization.  However, the constant factors must be
   carefully balanced; our experiments show a small net loss
   in some situations and net gain in others.  The
-  controlling factor here is the distribution of weights; if
+  controlling factor here is the distribution of weights. If
   a few samples carry most of the sample weight,
   heapification will pay for itself.  Since the case in BPF where a
   few samples carry most of the weight tends to be the case where the
@@ -284,23 +296,25 @@
   special benefit in a variable-population BPF technique
   such as KLD-sampling~\cite{kld}.
 
-  For the normal case of resampling, we would like to get
-  rid of the $\log m$ penalty per output sample.  However,
-  there is a rarely-occuring special case in which this
-  algorithm is especially efficient.  Consider an offline
-  sampling problem in which we plan to repeatedly draw a
-  small number of samples from the same extremely large
-  input distribution.  Because the input distribution
-  remains fixed, the cost of heapification can be amortized
-  away, yielding an amortized $O(n \log m)$ algorithm.
+  When sampling an arbitrary population for arbitrary
+  values, we would still like to get rid of the $\log m$
+  penalty per output sample.  However, there is a
+  rarely-occuring special case in which this algorithm is
+  especially efficient even compared to the other algorithms
+  we discuss here.  Consider an offline sampling problem in
+  which we plan to repeatedly draw a small number $k$ of
+  samples from the same large input distribution.  Because
+  the input distribution remains fixed, the cost of
+  heapification can be amortized away, yielding an amortized
+  $O(k \log m)$ algorithm.
 
-\subsection{A Merge-based $O(m + n \log n)$ Resampling Algorithm}\label{sec-merge}
+\subsection{A Merge-based $O(m + n \log n)$ Sampling Algorithm}\label{sec-merge}
 
   One can imagine trying to improve upon the complexity of
   the heap-style algorithm by using some more efficient data
   structure.  However, there is a fundamental tradeoff---the
   setup for an improved algorithm needs to continue to have
-  a cost low in $m$.  Otherwise, any savings in resampling
+  a cost low in $m$.  Otherwise, any savings in sampling
   will be swamped by setup in the common case that $m
   \approx n$.
 
@@ -337,7 +351,7 @@
       \>\>$s'_i \asgn s_j$
     \end{tabbing}
     \end{minipage}
-    \caption{Merge-based Resampling}\label{fig-merge}
+    \caption{Merge-based Sampling}\label{fig-merge}
   \end{figure}
 
   Complexity-wise, we seem to have simply moved the $\log$
@@ -347,44 +361,47 @@
   distinction.  The log factor this time comes merely from
   sorting an array of uniform variates.  If we could somehow
   generate the variates in sorted order (at amortized
-  constant cost) we could make this approach run in time
-  $O(m + n)$.  The next section shows how to achieve this.
+  constant cost per variate) we could make this approach run
+  in time $O(m + n)$.  The next section shows how to achieve
+  this.
 
-  Alternatively, if we could sort the variates in $O(n)$
-  time, we could get an $O(m + n)$ merge-based algorithm.
-  Given that what we are sorting is $n$ variates uniformly
+  Alternatively, if we could generate the variates in
+  arbitrary order and then somehow sort them in $O(n)$ time,
+  we could get an $O(m + n)$ merge-based algorithm.  Given
+  that what we are sorting is $n$ variates uniformly
   distributed between $0$ and $1$, a radix sort should do
-  the trick here.  However, the constant factors in the running
-  time are expected to be poor for large $n$, since the
-  radix sort has extremely poor cache behavior.
+  the trick here.  However, the constant factors in the
+  running time are expected to be poor for large $n$, since
+  the radix sort has extremely poor cache behavior.
 
-\subsection{Regular Approximate Resampling}\label{sec-regular}
+\subsection{Stochastic Universal Sampling}\label{sec-regular}
 
   For large $m$, a sorted array of uniform deviates looks an
   awful lot like it was produced by sampling at regular
   intervals; the spacing between deviates is pretty uniform.
-  This suggests an obvious approximate linear-time
-  algorithm, which turns out to be a well-known approach~\cite{kitagawa}:
-  sample the $n$ output samples at uniformly-spaced regular
-  intervals.  While it is not clear that such a resampling
-  algorithm has the same statistical properties as a perfect
-  resampling, it seems to be sufficiently good for our BPF
+  This suggests an obvious linear-time approximative
+  algorithm, which turns out to be a well-known approach
+  described in the literature as Stochastic Universal
+  Sampling.  The idea behind SUS is to sample the $n$ output
+  samples at $n$ uniformly-spaced regular intervals of weight,
+  starting at a random spot between $0$ and $1/(n+1)$.  While it
+  is not clear that SUS has the same statistical properties
+  as RWS, it seems to be sufficiently good for our BPF
   implementation, and to run about as fast as possible.
 
   If one is concerned about the possible selection errors of
-  regular sampling due to correlation, one might choose to
-  shuffle the sample array prior to sampling.  Since the
-  shuffle can be performed in $O(m)$ time, there is no
-  asymptotic penalty.
+  SUS due to correlation, one might choose to shuffle the
+  sample array prior to sampling.  Since the shuffle can be
+  performed in $O(m)$ time, there is no asymptotic penalty.
 
-\subsection{An Optimal $O(m + n)$ Resampling Algorithm}\label{sec-optimal}
+\subsection{An Optimal Perfect $O(m + n)$ Algorithm}\label{sec-optimal}
 
-  As discussed in Section~\ref{sec-merge}, if we could generate
-  the variates comprising a uniform sample of $n$ values in
-  increasing order, we could resample perfectly in time $O(m
-  + n)$, improving upon the regular method of Section~\ref{sec-regular}.  In
-  this section, we show an approach that achieves this
-  goal.
+  As discussed in Section~\ref{sec-merge}, if we could
+  generate the variates comprising a uniform sample of $n$
+  values in increasing order, we could sample perfectly in
+  time $O(m + n)$, achieving the same sampling as RWS with
+  good performance.  In this section, we show an approach
+  that achieves this goal.
 
   Assume without loss of generality that our goal is simply
   to generate the first variate in a uniform sample of $n +
@@ -462,8 +479,7 @@
 
   We now have the array $u$ of deviates in sorted order that
   we need to feed the {\em merge} algorithm of the previous
-  section.  We thus have an $O(m + n)$ algorithm for random
-  weighted selection.
+  section.  We thus have an $O(m + n)$ algorithm for RWS.
 
 \subsubsection{Correctness of the Optimal Algorithm}
 
@@ -581,21 +597,24 @@
     \end{description}
   \end{proposition}
 
-\subsubsection{Faster Generation of Variates}
+\section{Faster Generation of Variates}
 
-  The method of directly generating variates described in the
-  previous section has a minor limitation: it requires an
-  exponentiation per variate.  Even a fast implementation of
-  the mathematical function {\tt pow()} on a machine with
-  fast floating point is expensive compared to the single
-  multiply of regular resampling.
+  The remaining bottleneck in sampling itself is the cost of
+  the constant number of calls to the {\tt pow()} function,
+  each with a slightly different argument.  These values are
+  computed during variate generation by calling the standard
+  math library function {\tt pow(x,y)}.  There is only one
+  call to {\tt pow()} per particle, and only for a constant
+  number of particles.  There are many calls to {\tt exp()}
+  per particle for all particles, so {\tt pow()} is not a
+  bottleneck for BPF.  However, it would be nice to reduce
+  this cost, and approaches are available.
 
-  One possible way around the {\tt pow()} bottleneck is to generate
-  random variates with distribution $(1 - x)^n$ by
-  Marsaglia and
-  Tsang's ``Ziggurat Method'' PRNG~\cite{ziggurat,ziggurat-fixes}.
-  Unfortunately, the desired
-  distribution is bivariate.  The most direct
+  One possible way around the {\tt pow()} bottleneck is to
+  generate random variates with distribution $(1 - x)^n$ by
+  Marsaglia and Tsang's ``Ziggurat Method''
+  PRNG~\cite{ziggurat,ziggurat-fixes}.  Unfortunately, the
+  desired distribution is bivariate.  The most direct
   approach would lead to generating $n$ sets of Ziggurat
   tables, which would be prohibitively memory-expensive for
   large $n$.
@@ -609,33 +628,24 @@
  $$
 \lim_{a \rightarrow \infty}\left(1 - \frac{x}{a}\right)^{an}
   =   \lim_{a \rightarrow \infty}\left(1 + \frac{(-x)}{a}\right)^{an}
-  = e^{-xn}$$  This approximation corresponds to a standard 
-  linear-time approximate resampling method in which the next sample
+  = e^{-xn}$$
+  This approximation corresponds to a standard linear-time
+  approximative sampling method in which the next sample
   weight is given by an exponentially-distributed
-  variate~\cite{carpenter}.  The approximation works well up until near the
-  end of the resampling, and is relatively inexpensive if a
-  Ziggurat-style exponential generator is used.
+  variate~\cite{carpenter}.  The approximation works well up
+  until near the end of sampling, and is relatively
+  inexpensive if a Ziggurat-style exponential generator is
+  used.
 
-  We can get the same performance with perfect resampling,
+  We can get the same performance with perfect sampling,
   though, by modifying a Ziggurat generator for
   $e^{-50\mu_0}$ to accurately compute the desired power by
   tweaking the rejection step.  The efficiency of the
   generator would deteriorate unacceptably in the last 50
   samples, so at that point we just switch to calling {\tt
-  pow()} directly.  The resulting resampling implementation
-  has performance close to that of regular resampling, but
-  with the perfect resampling of the na\"ive method.
-
-  A parallel version of our perfect algorithm is
-  straightforward to achieve. Although space precludes a
-  detailed description, the basic idea is as follows.  Given
-  $p$ processors, each processor generates a variate $v_i$ from the
-  distribution $x^i(1-x)^{p-i}$, then binary searches for
-  the sample breakpoint corresponding to that variate.  Then
-  the processor generates $n/p$ samples in the range
-  $v_{i-1}\ldots v_i$ using the perfect resampling
-  algorithm.  This achieves a linear speedup while retaining
-  statistically correct resampling.
+  pow()} directly.  The resulting sampling implementation
+  has performance close to that of SUS, but produces a
+  sample exactly as na\"ive RWS would.
 
 \section{Evaluation}
 
@@ -689,7 +699,7 @@
   The distinction between algorithms is somewhat masked by the mediocre running
   time of the rest of the BPF implementation; resampling is
   not the bottleneck for any of these fast algorithms.  The
-  performance of the regular algorithm without shuffling illustrates
+  performance of SUS without shuffling illustrates
   this---the cost of that algorithm is quite close to zero,
   and thus represents something of a bound on the
   performance improvement possible through faster resampling.
@@ -699,7 +709,7 @@
   optimal algorithm scales linearly.  There does not appear
   to be much advantage in using a heap-based algorithm at
   any particle size.  The Ziggurat implementation of our
-  optimal algorithm is quite close to regular resampling
+  optimal algorithm is quite close to SUS
   with shuffle at large particle counts.  Given the
   correctness of our optimal algorithm, we think that this
   represents a significant achievement.
@@ -707,25 +717,24 @@
 \section{Discussion}
 
   We have shown an $O(m + n)$ algorithm for perfect
-  resampling, and an extremely fast BPF implementation based
+  sampling, and an extremely fast BPF implementation based
   on this algorithm.  However, further speedups are
   possible.  In this section, we discuss some of them.
 
 \subsection{Constant Factors}
 
-  In a typical noise model, there is one call
-  to a Gaussian-distributed pseudo-random number generator
-  and to the {\tt exp()} function per particle {\em per
-  sensor}: this is how the weights are updated.  These are the
+  In a typical noise model, there is one call to a
+  Gaussian-distributed pseudo-random number generator and to
+  the {\tt exp()} function per particle {\em per sensor}:
+  this is how the weights are updated.  These are the
   constant-factor bottlenecks in a BPF implementation with
   linear-time or near-linear-time resampling.
 
   The cost of generating Gaussian pseudo-random numbers can
-  be reduced to insignificance by using Marsaglia and
-  Tsang's ``Ziggurat Method'' PRNG~\cite{ziggurat}.  We
-  observed an approximate doubling of speed in our BPF
-  implementation by switching to this PRNG, and it is now
-  far from being the bottleneck.
+  be reduced to insignificance by using a straightforward
+  Gaussian Ziggurat PRNG.  We observed an approximate
+  doubling of speed in our BPF implementation by switching
+  to this PRNG, and it is now far from being the bottleneck.
 
   The {\tt exp()} bottleneck is harder.  We have recently
   switched to a fast approximate exponentiation trick due to
@@ -735,53 +744,45 @@
   distributions altogether.  Work is still underway in this
   area.
 
+\subsection{Paralellization}\label{sec-parallel}
 
-  The remaining bottleneck in resampling itself is the cost
-  of the $O(n)$ calls to the {\tt pow()} function, each with
-  a slightly different argument.  These rational
-  exponentiations are computed during variate generation by
-  calling the standard math library function {\tt pow(x,y)}.
-  Since there is only one call to {\tt pow()} per particle,
-  but many calls to {\tt exp()} per particle, this is not
-  the bottleneck step for BPF.  However, it would be nice to
-  cut it down, and approaches are available.
+  A parallel version of our perfect algorithm is
+  straightforward to achieve. The basic idea is as follows.
+  Given $p$ processors, each processor generates a variate
+  $v_i$ from the distribution $x^i(1-x)^{p-i}$, then binary
+  searches for the sample breakpoint corresponding to that
+  variate.  Then the processor generates $n/p$ samples in
+  the range $v_{i-1}\ldots v_i$ using the perfect sampling
+  algorithm.  This achieves a linear speedup while retaining
+  statistically correct resampling.
 
-\subsubsection{Direct Generation of Variates}
+  Thus, the parallelized version of the algorithm follows
+  these stpes:
+  \begin{enumerate}
+  \item Each processor fills in a section of total
+    accumulated weights in the input particle array as
+    described in Section~\ref{sec-merge}.
+  \item In a separate pass, each processor adds the sum of
+    weights computed by the processor to its left to its
+    section of the total accumulated weights in the input
+    particle array.
+  \item A master processor uses one of the methods of
+    ``skipping ahead'' in the variate
+    sequence described in the previous section to break up the
+    array of variates to be calculated by our $P$-processor
+    machine into $P$ regions.
+  \item \label{enum-penultimate} Each processor does a search for the start and end
+    of its section of the input particle array---the section
+    whose total weights contain its variates.  This can be done in time
+    $O(\log m)$ using binary search, with an impressively
+    small constant factor.
+  \item Finally, each processor resamples its section of the array
+    using any of the fast algorithms we describe.  The key
+    here is that these algorithms are all completely
+    parallelizable with zero overhead, given the setup of
+    steps~1--\ref{enum-penultimate}.
+  \end{enumerate}
 
-  One way around the {\tt pow()} bottleneck is to generate
-  random variates with distribution $(1 - x)^n$ by
-  some less expensive method than that of
-  Section~\ref{sec-optimal}.  The Ziggurat method mentioned
-  previously would be about right, except that the desired
-  distribution is a two-argument function.  The most direct
-  approach would lead to generating $n$ sets of Ziggurat
-  tables, which would be prohibitively memory-expensive for
-  large $n$.
-
-  
-  When computing $(1 - x)^n$ for large $n$, however, our
-  probability expression becomes self-similar, and we can
-  accurately approximate the function for larger $n$ using
-  the function with smaller $n$. $$
-    (1 - x)^n \approx \left(1 - \frac{x}{a}\right)^{an}
-  $$
-  In fact, this is the well-known compound interest problem,
-  yielding an elegant limiting approximation. $$
-  \lim_{a \rightarrow \infty}\left(1 - \frac{x}{a}\right)^{an}
-  =   \lim_{a \rightarrow \infty}\left(1 + \frac{(-x)}{a}\right)^{an}
-  = e^{-xn}$$  This approximation corresponds to a standard 
-  linear-time approximate resampling method in which the next sample
-  weight is given by an exponentially-distributed
-  variate~\cite{carpenter}.  The approximation works well up until near the
-  end of the resampling, and is relatively inexpensive if a
-  Ziggurat-style exponential generator is used.
-
-  We can do better, though, by modifying the Ziggurat
-  generator to accurately compute the desired power by
-  tweaking the rejection step---this will converge poorly
-  for the last 50 samples or so due to the degenerating
-  approximation, at which point we can just switch to
-  calling {\tt pow()} directly.
 
 \subsubsection{Segmentation}\label{sec-segment}
 
@@ -835,45 +836,16 @@
   this approximation should be extremely small, and it would
   avoid a lot of complexity.
   
-\subsection{Paralellization}\label{sec-parallel}
-
-  Our optimal algorithm will parallelize reasonably well
-  with some additional work. 
-  \begin{enumerate}
-  \item Each processor fills in a section of total
-    accumulated weights in the input particle array as
-    described in Section~\ref{sec-merge}.
-  \item In a separate pass, each processor adds the sum of
-    weights computed by the processor to its left to its
-    section of the total accumulated weights in the input
-    particle array.
-  \item A master processor uses one of the methods of
-    ``skipping ahead'' in the variate
-    sequence described in the previous section to break up the
-    array of variates to be calculated by our $P$-processor
-    machine into $P$ regions.
-  \item \label{enum-penultimate} Each processor does a search for the start and end
-    of its section of the input particle array---the section
-    whose total weights contain its variates.  This can be done in time
-    $O(\log m)$ using binary search, with an impressively
-    small constant factor.
-  \item Finally, each processor resamples its section of the array
-    using any of the fast algorithms we describe.  The key
-    here is that these algorithms are all completely
-    parallelizable with zero overhead, given the setup of
-    steps~1--\ref{enum-penultimate}.
-  \end{enumerate}
-
 \subsection{Recommendations}
 
   There appear to be three basic regimes that weighted
-  resampling is deployed in.  The choice among the algorithms
+  sampling is deployed in.  The choice among the algorithms
   presented here may be largely guided by the deployment.
 
   In the ``offline'' environment, extremely fast desktop
   computers or even supercomputers are being used in
   resampling.  In this regime, the cost of floating point is
-  low, the desired resampling accuracy is high, millions or
+  low, the desired sampling accuracy is high, millions or
   billions of input samples may be presented to the
   resampler, and parallel processing is often a real option.
   The perfect optimal algorithm seems like an ideal choice
@@ -881,25 +853,25 @@
   for biomedical signal procesing, with which we have had
   some involvement.
 
-  In the ``high performance embedded'' environment, a single
+  In the ``high performance embedded'' environment a single
   high-performance CPU, typically without floating point, is
-  available, the desired resampling accuracy is high,
+  available, the desired sampling accuracy is high,
   real-time performance is usually required, and thousands
   to tens of thousands of input samples may be preseted to
   the resampler.  In this environment, either our optimal
-  resampler or regular resampling with shuffle may be
-  appropriate.  One example of this environment is the BPF
-  sensor fusion on the PPC Linux flight computer aboard our
-  amateur sounding rocket, for which this BPF implementation
-  was originally developed.
+  resampler or SUS with shuffle may be appropriate.  One
+  example of this environment is the BPF sensor fusion on
+  the PPC Linux flight computer aboard our amateur sounding
+  rocket, for which this BPF implementation was originally
+  developed.
 
   In the ``low-end embedded'' environment, a fairly slow
   CPU, typically without floating point, is available, the
   desired resampling accuracy is only moderate, real-time
   performance is usually required, and hundreds to tens of
   thousands of input samples may be presented to the
-  resampler.  In this regime, a regular resampler, which
-  can be implemented in a very small amount of very fast
+  resampler.  In this regime, an SUS sampler, which can be
+  implemented in a very small amount of very fast
   fixed-point or integer code, seems to be the best match.
   One example of this environment is a proprietary real-time
   BPF sensor fusion application for a portable ARM-7 device
