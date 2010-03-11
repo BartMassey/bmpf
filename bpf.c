@@ -95,23 +95,34 @@ void bpf_step(ccoord *vehicle, ccoord *gps, acoord *imu,
 	      double t, double dt, int report) {
     int i;
     particle_info *newp;
-    double tweight = 0;
+    double tweight;
     double invtweight;
     int best, worst;
     double best_weight, worst_weight;
     state est_state;
     static int resample_count = 0;
+#ifdef DEBUG
+    tweight = 0;
+    for (i = 0; i < nparticles; i++)
+	tweight += particle[i].weight;
+    assert(tweight > 0.00001);
+#endif
     /* update particles */
+    tweight = 0;
     for (i = 0; i < nparticles; i++) {
 	double w;
 	update_state(&particle[i].state, dt, 1);
 	/* do probabilistic weighting */
 	double gp = gps_prob(&particle[i].state, gps);
 	double ip = imu_prob(&particle[i].state, imu, dt);
-        w = gp * ip;
+        w = gp * ip * particle[i].weight;
 	particle[i].weight = w;
 	tweight += w;
     }
+    assert(tweight > 0.00001);
+    invtweight = 1.0 / tweight;
+    for (i = 0; i < nparticles; i++)
+	particle[i].weight = particle[i].weight * invtweight;
     est_state.posn.x = 0;
     est_state.posn.y = 0;
     est_state.vel.r = 0;
@@ -150,6 +161,8 @@ void bpf_step(ccoord *vehicle, ccoord *gps, acoord *imu,
 	/* complete */
 	particle = newp;
 	which_particle = !which_particle;
+	for (i = 0; i < nparticles; i++)
+	    particle[i].weight = 1.0 / nparticles;
     }
     {
 	best_weight = particle[0].weight;
@@ -204,10 +217,16 @@ static int read_inputs(ccoord *vehicle, ccoord *gps, acoord *imu, int *t_ms) {
 static void run(void) {
     ccoord vehicle, gps;
     acoord imu;
-    double t = 0;
+    double t;
     int t_ms;
     int t_last = 0;
+    int i;
     init_particles();
+    for (i = 0; i < nparticles; i++)
+	particle[i].weight = 1.0 / nparticles;
+    /* XXX for now, we dont want to deal with dt==0 */
+    read_inputs(&vehicle, &gps, &imu, &t_ms);
+    t = t_ms * (1.0 / 1000.0);
     while (read_inputs(&vehicle, &gps, &imu, &t_ms)) {
 	double t0 = t_ms * (1.0 / 1000.0);
 	double dt = t0 - t;

@@ -1,7 +1,7 @@
 #ifndef _RESAMPLE_H
 #define _RESAMPLE_H
 
-#include <ziggurat/random.h>
+#include <zrandom.h>
 #include "../bpf.h"
 
 /* accepts a total weight, an input sample size, an input sample array,
