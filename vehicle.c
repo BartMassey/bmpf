@@ -22,7 +22,7 @@ extern double fmax(double, double);
 #define _GNU_SOURCE
 #include <getopt.h>
 #undef _GNU_SOURCE
-#include <ziggurat/random.h>
+#include <zrandom.h>
 #include "bpf.h"
 #include "sim.h"
 

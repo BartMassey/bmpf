@@ -18,7 +18,7 @@ extern double fmin(double, double);
 extern double fmax(double, double);
 #include <stdlib.h>
 #include <string.h>
-#include <ziggurat/random.h>
+#include <zrandom.h>
 #include "bpf.h"
 #include "exp.h"
 #include "sim.h"
