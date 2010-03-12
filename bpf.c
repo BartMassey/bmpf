@@ -120,23 +120,19 @@ void bpf_step(ccoord *vehicle, ccoord *gps, acoord *imu,
 	tweight += w;
     }
 #ifdef DEBUG
-    invtweight = 1.0 / tweight;
-    tweight = 0;
-    for (i = 0; i < nparticles; i++) {
-	particle[i].weight = particle[i].weight * invtweight;
-        tweight += particle[i].weight;
-    }
     assert(tweight > 0.00001);
 #endif
+    invtweight = 1.0 / tweight;
+    for (i = 0; i < nparticles; i++)
+	particle[i].weight = particle[i].weight * invtweight;
     est_state.posn.x = 0;
     est_state.posn.y = 0;
     est_state.vel.r = 0;
     est_state.vel.t = 0;
     if (!best_particle) {
-	invtweight = 1.0 / tweight;
 	for (i = 0; i < nparticles; i++) {
 	    state *s = &particle[i].state;
-	    double w = particle[i].weight * invtweight;
+	    double w = particle[i].weight;
 	    est_state.posn.x += w * s->posn.x;
 	    est_state.posn.y += w * s->posn.y;
 	    est_state.vel.r += w * s->vel.r;
