@@ -119,6 +119,7 @@ void bpf_step(ccoord *vehicle, ccoord *gps, acoord *imu,
 	particle[i].weight = w;
 	tweight += w;
     }
+#ifdef DEBUG
     invtweight = 1.0 / tweight;
     tweight = 0;
     for (i = 0; i < nparticles; i++) {
@@ -126,6 +127,7 @@ void bpf_step(ccoord *vehicle, ccoord *gps, acoord *imu,
         tweight += particle[i].weight;
     }
     assert(tweight > 0.00001);
+#endif
     est_state.posn.x = 0;
     est_state.posn.y = 0;
     est_state.vel.r = 0;
@@ -302,8 +304,10 @@ int main(int argc, char **argv) {
 		break;
 	    }
 	}
+        assert(entry->name);
+        optind++;
     }
-    assert(resampler);
+    assert(optind == argc);
     if (fast_direction)
 	init_dirn();
     run();
