@@ -32,7 +32,7 @@ static int report_particles, best_particle;
 static int resample_interval = 1;
 
 static struct option options[] = {
-    {"report-particles", 0, 0, 'r'},
+    {"report-particles", 1, 0, 'r'},
     {"best-particle", 0, 0, 'b'},
     {"resample-interval", 1, 0, 's'},
     {"fast-direction", 0, 0, 'd'},
@@ -144,8 +144,6 @@ void bpf_step(ccoord *vehicle, ccoord *gps, acoord *imu,
 	}
     }
     if (report) {
-	double vx = vehicle->x;
-	double vy = vehicle->y;
 	FILE *fp;
 	char fn[128];
 	sprintf(fn, "benchtmp/particles-%g.dat", t);
@@ -154,7 +152,8 @@ void bpf_step(ccoord *vehicle, ccoord *gps, acoord *imu,
 	for (i = 0; i < nparticles; i++) {
 	    double px = particle[i].state.posn.x;
 	    double py = particle[i].state.posn.y;
-	    fprintf(fp, "%g %g\n", px - vx, py - vy);
+            double w = particle[i].weight;
+	    fprintf(fp, "%g %g %g\n", px, py, w);
 	}
 	fclose(fp);
     }
@@ -235,12 +234,14 @@ static void run(void) {
     while (read_inputs(&vehicle, &gps, &imu, &t_ms)) {
 	double t0 = t_ms * (1.0 / 1000.0);
 	double dt = t0 - t;
-	int report = t_ms - t_last >= 10000;
-	if (report)
-	    t_last = t_ms;
+        int report = 0;
+	if (report_particles > 0)
+            report = t_ms - t_last >= report_particles;
 	t = t0;
 	printf("%g %g", vehicle.x, vehicle.y);
 	bpf_step(&vehicle, &gps, &imu, t, dt, report);
+        if (report)
+	    t_last = t_ms;
 	printf("\n");
     }
 }
@@ -248,12 +249,12 @@ static void run(void) {
 int main(int argc, char **argv) {
     struct resample_info *entry;
     while (1) {
-	int c = getopt_long(argc, argv, "rbs:dA:V:G:R:T:", options, &optind);
+	int c = getopt_long(argc, argv, "r:bs:dA:V:G:R:T:", options, &optind);
 	if (c == -1)
 	    break;
 	switch (c) {
 	case 'r':
-	    report_particles = 1;
+	    report_particles = atoi(optarg);
 	    break;
 	case 'b':
 	    best_particle = 1;

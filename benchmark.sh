@@ -34,7 +34,7 @@ do
     tt=0
     while nickle -e "if($tt < $rept) exit(0); else exit(1);;"
     do
-      (time ./bpf $p $a <$vehicle >$datfile) 2>$timesfile
+      (time ./bpf -r 10000 $p $a <$vehicle >$datfile) 2>$timesfile
       if [ $? -ne 0 ]
       then
 	  echo "execution failure: see $timesfile for details" >&2
