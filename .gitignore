@@ -14,3 +14,4 @@ bpf
 vehicle
 vehicle.dat
 auto/
+/benchtmp/*.dat
