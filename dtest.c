@@ -10,7 +10,7 @@
 #define TRIALS 1000000
 
 #include <stdio.h>
-#include <ziggurat/random.h>
+#include <zrandom.h>
 
 double sample_mean[COUNT];
 

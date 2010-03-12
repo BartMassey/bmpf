@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <math.h>
-#include <ziggurat/random.h>
+#include <zrandom.h>
 
 #define NBINS 500
 #define N 50
