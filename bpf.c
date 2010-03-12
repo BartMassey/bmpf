@@ -69,7 +69,7 @@ static void init_particles(void) {
 }
 
 static double gprob(double delta, double sd) {
-    return exp_(-delta * delta * sd);
+    return exp(-0.5 * delta * delta / (sd * sd));
 }
 
 static double gps_prob(state *s, ccoord *gps) {
