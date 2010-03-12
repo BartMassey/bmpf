@@ -101,7 +101,7 @@ static enum bounce_problem bounce(double r, double t, state *s,
 
 void init_state(state *s) {
     s->posn.x = (uniform() * 2.0 - 1.0) * BOX_DIM;
-    s->posn.y = clip_box(fabs(gaussian(1.0)));
+    s->posn.y = (uniform() * 2.0 - 1.0) * BOX_DIM;
     s->vel.r = uniform();
     s->vel.t = normalize_angle(uniform() * M_PI_2);
 }
