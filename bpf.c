@@ -97,7 +97,10 @@ void bpf_step(ccoord *vehicle, ccoord *gps, acoord *imu,
     particle_info *newp;
     double tweight;
     double invtweight;
-    int best, worst;
+    int best;
+#ifdef DIAGNOSTIC_PRINT
+    int worst;
+#endif
     double best_weight, worst_weight;
     state est_state;
     static int resample_count = 0;
@@ -168,13 +171,17 @@ void bpf_step(ccoord *vehicle, ccoord *gps, acoord *imu,
 	best_weight = particle[0].weight;
 	worst_weight = particle[0].weight;
 	best = 0;
+#ifdef DIAGNOSTIC_PRINT
 	worst = 0;
+#endif
 	for (i = 1; i < nparticles; i++) {
 	    if (particle[i].weight > best_weight) {
 		best = i;
 		best_weight = particle[i].weight;
 	    } else if (particle[i].weight < worst_weight) {
+#ifdef DIAGNOSTIC_PRINT
 		worst = i;
+#endif
 		worst_weight = particle[i].weight;
 	    }
 	}
