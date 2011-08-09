@@ -48,7 +48,7 @@ $(RESAMPLERS): bpf.h resample/resample.h
 vehicle.dat: vehicle
 	./vehicle >vehicle.dat
 
-all: bpf ltrs.pdf
+paper: bpf ltrs.pdf
 
 ltrs.pdf: ltrs.tex ltrs.bbl $(PDF)
 	pdflatex ltrs
