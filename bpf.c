@@ -44,9 +44,6 @@ static struct option options[] = {
     {0, 0, 0, 0}
 };
 
-static const double nsecs = 100;
-static const double dt = 0.1;
-
 static int nparticles = 100;
 static int sort = 0;
 static resample *resampler = resample_naive;
